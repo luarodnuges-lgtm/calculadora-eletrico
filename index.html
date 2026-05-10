@@ -6,11 +6,12 @@
   <title>Elétrico Vale? — Calculadora Gasolina vs Elétrico</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://js.stripe.com/v3/"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Inter', sans-serif; background: #f5f5f3; color: #1a1a1a; min-height: 100vh; }
 
-    header { background: #fff; border-bottom: 1px solid #e5e5e5; padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between; }
+    header { background: #fff; border-bottom: 1px solid #e5e5e5; padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
     .logo { font-size: 18px; font-weight: 600; }
     .logo span { color: #16a34a; }
     .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -19,6 +20,7 @@
     .btn-sm.primary { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
     .btn-sm.primary:hover { background: #333; }
     .btn-sm.green { background: #16a34a; color: #fff; border-color: #16a34a; }
+    .btn-sm.green:hover { background: #15803d; }
     .badge-plan { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 500; }
     .badge-free { background: #f0f0f0; color: #666; }
     .badge-premium { background: #dcfce7; color: #15803d; }
@@ -110,8 +112,12 @@
     .premium-features { text-align: left; margin-bottom: 1.5rem; }
     .premium-feature { display: flex; align-items: center; gap: 8px; font-size: 14px; padding: 6px 0; }
     .premium-feature::before { content: "✓"; color: #16a34a; font-weight: 600; }
-    .price-tag { font-size: 28px; font-weight: 600; color: #1a1a1a; margin-bottom: 4px; }
+    .price-tag { font-size: 32px; font-weight: 600; color: #1a1a1a; margin-bottom: 4px; }
     .price-sub { font-size: 13px; color: #888; margin-bottom: 1.5rem; }
+
+    #payment-form { margin-top: 16px; }
+    #card-element { padding: 10px 12px; border: 1px solid #e5e5e5; border-radius: 8px; background: #fff; margin-bottom: 12px; }
+    #card-errors { color: #b91c1c; font-size: 13px; margin-bottom: 8px; }
 
     footer { text-align: center; padding: 2rem; font-size: 13px; color: #bbb; }
 
@@ -132,6 +138,7 @@
   </div>
 </header>
 
+<!-- Modal login/cadastro -->
 <div class="modal-overlay" id="modal" style="display:none;">
   <div class="modal">
     <button class="modal-close" onclick="closeModal()">×</button>
@@ -145,6 +152,23 @@
     <div class="field" style="margin-top:12px;"><label>Senha</label><input type="password" id="auth-password" placeholder="••••••••" /></div>
     <div id="auth-msg"></div>
     <button class="btn" style="margin-top:16px;" onclick="handleAuth()">Continuar</button>
+  </div>
+</div>
+
+<!-- Modal upgrade premium -->
+<div class="modal-overlay" id="modal-upgrade" style="display:none;">
+  <div class="modal">
+    <button class="modal-close" onclick="closeUpgrade()">×</button>
+    <h2>Assinar Premium</h2>
+    <p>Desbloqueie todas as funcionalidades por R$ 9,90/mês.</p>
+    <div id="payment-form">
+      <label style="font-size:13px;color:#555;display:block;margin-bottom:6px;">Dados do cartão</label>
+      <div id="card-element"></div>
+      <div id="card-errors"></div>
+      <button class="btn green" onclick="handlePayment()">Assinar por R$ 9,90/mês</button>
+      <p style="font-size:12px;color:#bbb;margin-top:12px;text-align:center;">Pagamento seguro via Stripe. Cancele quando quiser.</p>
+    </div>
+    <div id="payment-msg"></div>
   </div>
 </div>
 
@@ -259,7 +283,12 @@
 <script>
 const SUPABASE_URL = 'https://bspecfiuptgeuynqkjzk.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_Qn_PqtYz6oVTt26njfoGMA_T19bFAmA';
+const STRIPE_KEY = 'pk_test_51TVOfmRo9mDmHaPCB3ASQtwh9FyQqRpyugXgajzb3oOvoN9OxUuBhlgYkpRv36YWcLEpF0PnZqGat2Xkyr68dlM700sgA3nFti';
+const PRICE_ID = 'price_1TVOu1Ro9mDmHaPCjvKXh5zQ';
+
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const stripe = Stripe(STRIPE_KEY);
+let cardElement = null;
 
 const eletricos = [
   { nome:"BYD Seagull", preco:115900, efic:7.2, autonomia:300, manut:40, segmento:"Compacto" },
@@ -284,11 +313,7 @@ let currentActiveTab = 'calc';
 
 sb.auth.onAuthStateChange(async (event, session) => {
   currentUser = session?.user || null;
-  if (currentUser) {
-    await checkPremium();
-  } else {
-    isPremium = false;
-  }
+  if (currentUser) { await checkPremium(); } else { isPremium = false; }
   updateHeader();
   if (currentActiveTab === 'abast') renderAbastView();
   if (currentActiveTab === 'projecao') renderProjecaoView();
@@ -306,8 +331,8 @@ function updateHeader() {
     const email = currentUser.email.split('@')[0];
     hr.innerHTML = `
       <span class="user-name">${email}</span>
-      <span class="badge-plan ${isPremium ? 'badge-premium' : 'badge-free'}">${isPremium ? 'Premium' : 'Gratuito'}</span>
-      ${!isPremium ? '<button class="btn-sm green" onclick="showUpgrade()">Upgrade →</button>' : ''}
+      <span class="badge-plan ${isPremium?'badge-premium':'badge-free'}">${isPremium?'Premium ✓':'Gratuito'}</span>
+      ${!isPremium?'<button class="btn-sm green" onclick="openUpgrade()">Upgrade →</button>':''}
       <button class="btn-sm" onclick="logout()">Sair</button>
     `;
   } else {
@@ -318,54 +343,82 @@ function updateHeader() {
   }
 }
 
-async function logout() {
-  await sb.auth.signOut();
-}
+async function logout() { await sb.auth.signOut(); }
 
-function openModal(mode) {
-  document.getElementById('modal').style.display = 'flex';
-  switchModal(mode);
-}
-
-function closeModal() {
-  document.getElementById('modal').style.display = 'none';
-  document.getElementById('auth-msg').innerHTML = '';
-}
+function openModal(mode) { document.getElementById('modal').style.display='flex'; switchModal(mode); }
+function closeModal() { document.getElementById('modal').style.display='none'; document.getElementById('auth-msg').innerHTML=''; }
 
 function switchModal(mode) {
   modalMode = mode;
-  document.getElementById('mtab-login').className = 'modal-tab' + (mode==='login'?' active':'');
-  document.getElementById('mtab-signup').className = 'modal-tab' + (mode==='signup'?' active':'');
-  document.getElementById('modal-title').textContent = mode==='login' ? 'Entrar' : 'Criar conta';
-  document.getElementById('modal-desc').textContent = mode==='login' ? 'Acesse sua conta para salvar seus dados.' : 'Crie sua conta gratuita agora.';
-  document.getElementById('auth-msg').innerHTML = '';
+  document.getElementById('mtab-login').className='modal-tab'+(mode==='login'?' active':'');
+  document.getElementById('mtab-signup').className='modal-tab'+(mode==='signup'?' active':'');
+  document.getElementById('modal-title').textContent=mode==='login'?'Entrar':'Criar conta';
+  document.getElementById('modal-desc').textContent=mode==='login'?'Acesse sua conta para salvar seus dados.':'Crie sua conta gratuita agora.';
+  document.getElementById('auth-msg').innerHTML='';
 }
 
 async function handleAuth() {
   const email = document.getElementById('auth-email').value;
   const password = document.getElementById('auth-password').value;
   const msg = document.getElementById('auth-msg');
-  if (!email || !password) { msg.innerHTML = '<p class="msg-error">Preencha e-mail e senha.</p>'; return; }
-  if (modalMode === 'login') {
+  if (!email||!password) { msg.innerHTML='<p class="msg-error">Preencha e-mail e senha.</p>'; return; }
+  if (modalMode==='login') {
     const { error } = await sb.auth.signInWithPassword({ email, password });
-    if (error) { msg.innerHTML = '<p class="msg-error">E-mail ou senha incorretos.</p>'; return; }
+    if (error) { msg.innerHTML='<p class="msg-error">E-mail ou senha incorretos.</p>'; return; }
     closeModal();
   } else {
     const { error } = await sb.auth.signUp({ email, password });
-    if (error) { msg.innerHTML = `<p class="msg-error">${error.message}</p>`; return; }
-    msg.innerHTML = '<p class="msg-success">Conta criada! Verifique seu e-mail para confirmar.</p>';
+    if (error) { msg.innerHTML=`<p class="msg-error">${error.message}</p>`; return; }
+    msg.innerHTML='<p class="msg-success">Conta criada! Verifique seu e-mail para confirmar.</p>';
   }
+}
+
+function openUpgrade() {
+  if (!currentUser) { openModal('login'); return; }
+  document.getElementById('modal-upgrade').style.display='flex';
+  document.getElementById('payment-msg').innerHTML='';
+  setTimeout(() => {
+    if (!cardElement) {
+      const elements = stripe.elements();
+      cardElement = elements.create('card', { style: { base: { fontSize:'16px', color:'#1a1a1a', fontFamily:'Inter, sans-serif' } } });
+      cardElement.mount('#card-element');
+    }
+  }, 100);
+}
+
+function closeUpgrade() { document.getElementById('modal-upgrade').style.display='none'; }
+
+async function handlePayment() {
+  const msg = document.getElementById('payment-msg');
+  const errors = document.getElementById('card-errors');
+  errors.textContent = '';
+  msg.innerHTML = '<p style="font-size:13px;color:#888;">Processando pagamento...</p>';
+
+  const { paymentMethod, error } = await stripe.createPaymentMethod({ type:'card', card:cardElement });
+  if (error) { errors.textContent = error.message; msg.innerHTML=''; return; }
+
+  // Em produção, aqui você chamaria um backend para criar a assinatura no Stripe
+  // e atualizar o is_premium no Supabase via webhook.
+  // Por ora, simulamos a ativação para demonstração:
+  await sb.from('profiles').upsert({ id: currentUser.id, is_premium: true });
+  isPremium = true;
+  closeUpgrade();
+  updateHeader();
+  msg.innerHTML='';
+  alert('🎉 Premium ativado! Bem-vindo ao plano completo.');
+  if (currentActiveTab==='abast') renderAbastView();
+  if (currentActiveTab==='projecao') renderProjecaoView();
 }
 
 function showTab(t) {
   currentActiveTab = t;
   ['calc','modelos','abast','projecao'].forEach(v => {
-    document.getElementById('view-'+v).style.display = v===t ? 'block' : 'none';
-    document.getElementById('tab-'+v).className = 'tab'+(v===t?' active':'');
+    document.getElementById('view-'+v).style.display=v===t?'block':'none';
+    document.getElementById('tab-'+v).className='tab'+(v===t?' active':'');
   });
-  if (t === 'abast') renderAbastView();
-  if (t === 'projecao') renderProjecaoView();
-  if (t === 'modelos') renderModelos();
+  if (t==='abast') renderAbastView();
+  if (t==='projecao') renderProjecaoView();
+  if (t==='modelos') renderModelos();
 }
 
 function premiumLockHTML(feature) {
@@ -380,22 +433,18 @@ function premiumLockHTML(feature) {
     </div>
     <div class="price-tag">R$ 9,90<span style="font-size:16px;font-weight:400;color:#888">/mês</span></div>
     <div class="price-sub">Cancele quando quiser</div>
-    <button class="btn green" onclick="showUpgrade()">Assinar Premium →</button>
+    <button class="btn green" onclick="openUpgrade()">Assinar Premium →</button>
   </div>`;
-}
-
-function showUpgrade() {
-  alert('Em breve! O sistema de pagamento será integrado na próxima etapa. 🚀');
 }
 
 function renderAbastView() {
   const el = document.getElementById('view-abast');
   if (!currentUser) {
-    el.innerHTML = `<div class="premium-lock"><h3>Faça login para continuar</h3><p>Entre na sua conta para registrar seus abastecimentos.</p><button class="btn" style="max-width:200px;margin:0 auto;" onclick="openModal('login')">Entrar →</button></div>`;
+    el.innerHTML=`<div class="premium-lock"><h3>Faça login para continuar</h3><p>Entre na sua conta para registrar seus abastecimentos.</p><button class="btn" style="max-width:200px;margin:0 auto;" onclick="openModal('login')">Entrar →</button></div>`;
     return;
   }
-  if (!isPremium) { el.innerHTML = premiumLockHTML('histórico de abastecimentos'); return; }
-  el.innerHTML = `
+  if (!isPremium) { el.innerHTML=premiumLockHTML('histórico de abastecimentos'); return; }
+  el.innerHTML=`
     <p class="section-title">Registrar abastecimento</p>
     <div class="card">
       <div class="grid-2" style="margin-bottom:12px;">
@@ -413,74 +462,67 @@ function renderAbastView() {
       <div style="font-size:22px;font-weight:600;" id="ab-media">-</div>
     </div>
   `;
-  document.getElementById('ab-data').valueAsDate = new Date();
+  document.getElementById('ab-data').valueAsDate=new Date();
   loadAbast();
 }
 
 async function loadAbast() {
-  const { data } = await sb.from('abastecimentos').select('*').eq('user_id', currentUser.id).order('data', { ascending: false });
-  abastecimentos = data || [];
+  const { data } = await sb.from('abastecimentos').select('*').eq('user_id',currentUser.id).order('data',{ascending:false});
+  abastecimentos = data||[];
   renderAbastList();
 }
 
 async function addAbast() {
-  const litros = parseFloat(document.getElementById('ab-litros').value);
-  const valor = parseFloat(document.getElementById('ab-valor').value);
-  const km = parseFloat(document.getElementById('ab-km').value);
-  const data = document.getElementById('ab-data').value;
-  if (!litros || !valor) { alert('Preencha litros e valor.'); return; }
-  await sb.from('abastecimentos').insert({ user_id: currentUser.id, litros, valor, km, data });
-  document.getElementById('ab-litros').value = '';
-  document.getElementById('ab-valor').value = '';
-  document.getElementById('ab-km').value = '';
+  const litros=parseFloat(document.getElementById('ab-litros').value);
+  const valor=parseFloat(document.getElementById('ab-valor').value);
+  const km=parseFloat(document.getElementById('ab-km').value);
+  const data=document.getElementById('ab-data').value;
+  if (!litros||!valor) { alert('Preencha litros e valor.'); return; }
+  await sb.from('abastecimentos').insert({user_id:currentUser.id,litros,valor,km,data});
+  document.getElementById('ab-litros').value='';
+  document.getElementById('ab-valor').value='';
+  document.getElementById('ab-km').value='';
   loadAbast();
 }
 
 function renderAbastList() {
-  const list = document.getElementById('abast-list');
+  const list=document.getElementById('abast-list');
   if (!list) return;
-  if (abastecimentos.length === 0) {
-    list.innerHTML = '<p style="font-size:14px;color:#aaa;">Nenhum abastecimento registrado ainda.</p>';
-    document.getElementById('abast-resumo').style.display = 'none';
-    return;
-  }
-  let tl = 0, tv = 0, html = '';
-  abastecimentos.forEach(a => {
-    tl += a.litros; tv += a.valor;
-    const ppl = (a.valor / a.litros).toFixed(2);
-    html += `<div class="abast-item"><span>${a.data||'Sem data'} — ${a.litros}L</span><span><span class="tag">R$ ${ppl}/l</span>&nbsp; R$ ${parseFloat(a.valor).toFixed(2)}</span></div>`;
+  if (abastecimentos.length===0) { list.innerHTML='<p style="font-size:14px;color:#aaa;">Nenhum abastecimento registrado ainda.</p>'; document.getElementById('abast-resumo').style.display='none'; return; }
+  let tl=0,tv=0,html='';
+  abastecimentos.forEach(a=>{
+    tl+=a.litros; tv+=a.valor;
+    const ppl=(a.valor/a.litros).toFixed(2);
+    html+=`<div class="abast-item"><span>${a.data||'Sem data'} — ${a.litros}L</span><span><span class="tag">R$ ${ppl}/l</span>&nbsp; R$ ${parseFloat(a.valor).toFixed(2)}</span></div>`;
   });
-  list.innerHTML = html;
-  document.getElementById('ab-media').textContent = 'R$ ' + (tv/tl).toFixed(2) + '/litro';
-  document.getElementById('abast-resumo').style.display = 'block';
+  list.innerHTML=html;
+  document.getElementById('ab-media').textContent='R$ '+(tv/tl).toFixed(2)+'/litro';
+  document.getElementById('abast-resumo').style.display='block';
 }
 
 function renderProjecaoView() {
-  const el = document.getElementById('view-projecao');
-  if (!currentUser) {
-    el.innerHTML = `<div class="premium-lock"><h3>Faça login para continuar</h3><p>Entre na sua conta para ver sua projeção anual.</p><button class="btn" style="max-width:200px;margin:0 auto;" onclick="openModal('login')">Entrar →</button></div>`;
-    return;
-  }
-  if (!isPremium) { el.innerHTML = premiumLockHTML('projeção de economia anual'); return; }
+  const el=document.getElementById('view-projecao');
+  if (!currentUser) { el.innerHTML=`<div class="premium-lock"><h3>Faça login para continuar</h3><p>Entre na sua conta para ver sua projeção anual.</p><button class="btn" style="max-width:200px;margin:0 auto;" onclick="openModal('login')">Entrar →</button></div>`; return; }
+  if (!isPremium) { el.innerHTML=premiumLockHTML('projeção de economia anual'); return; }
 
-  const kmMes = parseFloat(document.getElementById('km_mes')?.value)||1500;
-  const consumo = parseFloat(document.getElementById('consumo')?.value)||12;
-  const precoGas = parseFloat(document.getElementById('preco_gas')?.value)||6.20;
-  const efic = parseFloat(document.getElementById('efic')?.value)||6;
-  const precoKwh = parseFloat(document.getElementById('preco_kwh')?.value)||0.85;
-  const econManut = parseFloat(document.getElementById('economia_manut')?.value)||40;
+  const kmMes=parseFloat(document.getElementById('km_mes')?.value)||1500;
+  const consumo=parseFloat(document.getElementById('consumo')?.value)||12;
+  const precoGas=parseFloat(document.getElementById('preco_gas')?.value)||6.20;
+  const efic=parseFloat(document.getElementById('efic')?.value)||6;
+  const precoKwh=parseFloat(document.getElementById('preco_kwh')?.value)||0.85;
+  const econManut=parseFloat(document.getElementById('economia_manut')?.value)||40;
 
-  const gastoGas = (kmMes/consumo)*precoGas + 300;
-  const gastoEle = (kmMes/efic)*precoKwh + 300*(1-econManut/100);
-  const ecoMes = gastoGas - gastoEle;
+  const gastoGas=(kmMes/consumo)*precoGas+300;
+  const gastoEle=(kmMes/efic)*precoKwh+300*(1-econManut/100);
+  const ecoMes=gastoGas-gastoEle;
 
-  const anos = [1,2,3,5,10];
-  let rows = anos.map(a => {
-    const eco = ecoMes*12*a;
+  const anos=[1,2,3,5,10];
+  let rows=anos.map(a=>{
+    const eco=ecoMes*12*a;
     return `<div class="abast-item"><span>${a} ano${a>1?'s':''}</span><span style="font-weight:600;color:${eco>0?'#16a34a':'#dc2626'}">${eco>0?'+':''}R$ ${Math.round(eco).toLocaleString('pt-BR')}</span></div>`;
   }).join('');
 
-  el.innerHTML = `
+  el.innerHTML=`
     <p class="section-title">Projeção de economia com elétrico</p>
     <div class="card">
       <p style="font-size:13px;color:#888;margin-bottom:1rem;">Baseado nos dados da calculadora. Economia mensal estimada: <strong>R$ ${Math.round(ecoMes).toLocaleString('pt-BR')}</strong></p>
@@ -491,107 +533,104 @@ function renderProjecaoView() {
 }
 
 function preencherModelo() {
-  const idx = document.getElementById('select-modelo').value;
-  const box = document.getElementById('modelo-info-box');
+  const idx=document.getElementById('select-modelo').value;
+  const box=document.getElementById('modelo-info-box');
   if (idx==='') { box.style.display='none'; return; }
-  const e = eletricos[parseInt(idx)];
-  document.getElementById('efic').value = e.efic;
-  document.getElementById('valor_eletrico').value = e.preco;
-  document.getElementById('economia_manut').value = e.manut;
-  document.getElementById('info-seg').textContent = e.segmento;
-  document.getElementById('info-auto').textContent = e.autonomia+' km';
-  document.getElementById('info-efic').textContent = e.efic+' km/kWh';
-  document.getElementById('info-manut').textContent = e.manut+'%';
-  box.style.display = 'block';
-  document.getElementById('bar-ele-label').textContent = e.nome;
+  const e=eletricos[parseInt(idx)];
+  document.getElementById('efic').value=e.efic;
+  document.getElementById('valor_eletrico').value=e.preco;
+  document.getElementById('economia_manut').value=e.manut;
+  document.getElementById('info-seg').textContent=e.segmento;
+  document.getElementById('info-auto').textContent=e.autonomia+' km';
+  document.getElementById('info-efic').textContent=e.efic+' km/kWh';
+  document.getElementById('info-manut').textContent=e.manut+'%';
+  box.style.display='block';
+  document.getElementById('bar-ele-label').textContent=e.nome;
 }
 
 function calcular() {
-  const consumo = parseFloat(document.getElementById('consumo').value)||12;
-  const precoGas = parseFloat(document.getElementById('preco_gas').value)||6.20;
-  const kmMes = parseFloat(document.getElementById('km_mes').value)||1500;
-  const valorAtual = parseFloat(document.getElementById('valor_atual').value)||60000;
-  const efic = parseFloat(document.getElementById('efic').value)||6;
-  const precoKwh = parseFloat(document.getElementById('preco_kwh').value)||0.85;
-  const valorEletrico = parseFloat(document.getElementById('valor_eletrico').value)||180000;
-  const econManut = parseFloat(document.getElementById('economia_manut').value)||40;
+  const consumo=parseFloat(document.getElementById('consumo').value)||12;
+  const precoGas=parseFloat(document.getElementById('preco_gas').value)||6.20;
+  const kmMes=parseFloat(document.getElementById('km_mes').value)||1500;
+  const valorAtual=parseFloat(document.getElementById('valor_atual').value)||60000;
+  const efic=parseFloat(document.getElementById('efic').value)||6;
+  const precoKwh=parseFloat(document.getElementById('preco_kwh').value)||0.85;
+  const valorEletrico=parseFloat(document.getElementById('valor_eletrico').value)||180000;
+  const econManut=parseFloat(document.getElementById('economia_manut').value)||40;
 
-  const gastoGas = (kmMes/consumo)*precoGas;
-  const gastoEle = (kmMes/efic)*precoKwh;
-  const manutGas = 300;
-  const manutEle = manutGas*(1-econManut/100);
-  const totalGas = gastoGas+manutGas;
-  const totalEle = gastoEle+manutEle;
-  const ecoMes = totalGas-totalEle;
-  const difValor = valorEletrico-valorAtual;
-  const payback = difValor>0&&ecoMes>0 ? difValor/(ecoMes*12) : 0;
+  const gastoGas=(kmMes/consumo)*precoGas;
+  const gastoEle=(kmMes/efic)*precoKwh;
+  const manutGas=300;
+  const manutEle=manutGas*(1-econManut/100);
+  const totalGas=gastoGas+manutGas;
+  const totalEle=gastoEle+manutEle;
+  const ecoMes=totalGas-totalEle;
+  const difValor=valorEletrico-valorAtual;
+  const payback=difValor>0&&ecoMes>0?difValor/(ecoMes*12):0;
 
-  document.getElementById('r-gas').textContent = 'R$ '+Math.round(totalGas).toLocaleString('pt-BR');
-  document.getElementById('r-ele').textContent = 'R$ '+Math.round(totalEle).toLocaleString('pt-BR');
-  document.getElementById('r-eco').textContent = ecoMes>0 ? 'R$ '+Math.round(ecoMes).toLocaleString('pt-BR') : 'R$ 0';
-  document.getElementById('r-pay').textContent = difValor<=0 ? 'Já vale!' : payback>0 ? payback.toFixed(1)+' anos' : '-';
+  document.getElementById('r-gas').textContent='R$ '+Math.round(totalGas).toLocaleString('pt-BR');
+  document.getElementById('r-ele').textContent='R$ '+Math.round(totalEle).toLocaleString('pt-BR');
+  document.getElementById('r-eco').textContent=ecoMes>0?'R$ '+Math.round(ecoMes).toLocaleString('pt-BR'):'R$ 0';
+  document.getElementById('r-pay').textContent=difValor<=0?'Já vale!':payback>0?payback.toFixed(1)+' anos':'-';
 
-  const max = Math.max(totalGas,totalEle);
-  document.getElementById('bar-gas').style.width = Math.round((totalGas/max)*100)+'%';
-  document.getElementById('bar-ele').style.width = Math.round((totalEle/max)*100)+'%';
-  document.getElementById('bar-gas-val').textContent = 'R$ '+Math.round(totalGas).toLocaleString('pt-BR')+'/mês';
-  document.getElementById('bar-ele-val').textContent = 'R$ '+Math.round(totalEle).toLocaleString('pt-BR')+'/mês';
+  const max=Math.max(totalGas,totalEle);
+  document.getElementById('bar-gas').style.width=Math.round((totalGas/max)*100)+'%';
+  document.getElementById('bar-ele').style.width=Math.round((totalEle/max)*100)+'%';
+  document.getElementById('bar-gas-val').textContent='R$ '+Math.round(totalGas).toLocaleString('pt-BR')+'/mês';
+  document.getElementById('bar-ele-val').textContent='R$ '+Math.round(totalEle).toLocaleString('pt-BR')+'/mês';
 
-  const idx = document.getElementById('select-modelo').value;
-  const nomeModelo = idx!=='' ? eletricos[parseInt(idx)].nome : 'o elétrico';
-  const vBox = document.getElementById('verdict-box');
-  const vTitle = document.getElementById('verdict-title');
-  const vText = document.getElementById('verdict-text');
-  vBox.className = 'verdict';
+  const idx=document.getElementById('select-modelo').value;
+  const nomeModelo=idx!==''?eletricos[parseInt(idx)].nome:'o elétrico';
+  const vBox=document.getElementById('verdict-box');
+  const vTitle=document.getElementById('verdict-title');
+  const vText=document.getElementById('verdict-text');
+  vBox.className='verdict';
   if (ecoMes<=0) {
     vBox.classList.add('danger');
-    vTitle.textContent = nomeModelo+' não compensa agora';
-    vText.textContent = 'Com seu perfil de uso, esse elétrico custaria mais caro no dia a dia. Considere rodar mais km ou buscar um modelo mais acessível.';
+    vTitle.textContent=nomeModelo+' não compensa agora';
+    vText.textContent='Com seu perfil de uso, esse elétrico custaria mais caro no dia a dia. Considere rodar mais km ou buscar um modelo mais acessível.';
   } else if (payback>10) {
     vBox.classList.add('warning');
-    vTitle.textContent = 'Vale, mas o retorno é longo';
-    vText.textContent = 'Você economizaria R$ '+Math.round(ecoMes).toLocaleString('pt-BR')+'/mês com o '+nomeModelo+', mas levaria '+payback.toFixed(1)+' anos para recuperar o investimento.';
+    vTitle.textContent='Vale, mas o retorno é longo';
+    vText.textContent='Você economizaria R$ '+Math.round(ecoMes).toLocaleString('pt-BR')+'/mês com o '+nomeModelo+', mas levaria '+payback.toFixed(1)+' anos para recuperar o investimento.';
   } else {
     vBox.classList.add('success');
-    vTitle.textContent = nomeModelo+' vale a pena!';
-    vText.textContent = 'Você economizaria R$ '+Math.round(ecoMes).toLocaleString('pt-BR')+'/mês e recuperaria o investimento em '+payback.toFixed(1)+' anos.';
+    vTitle.textContent=nomeModelo+' vale a pena!';
+    vText.textContent='Você economizaria R$ '+Math.round(ecoMes).toLocaleString('pt-BR')+'/mês e recuperaria o investimento em '+payback.toFixed(1)+' anos.';
   }
-  document.getElementById('resultados').style.display = 'block';
+  document.getElementById('resultados').style.display='block';
 }
 
 function renderModelos() {
-  const kmMes = parseFloat(document.getElementById('m-km').value)||1500;
-  const precoKwh = parseFloat(document.getElementById('m-kwh').value)||0.85;
-  const gasAtual = parseFloat(document.getElementById('m-gasatual').value)||780;
-  const faixa = parseFloat(document.getElementById('m-faixa').value)||0;
-  const manutGas = 300;
+  const kmMes=parseFloat(document.getElementById('m-km').value)||1500;
+  const precoKwh=parseFloat(document.getElementById('m-kwh').value)||0.85;
+  const gasAtual=parseFloat(document.getElementById('m-gasatual').value)||780;
+  const faixa=parseFloat(document.getElementById('m-faixa').value)||0;
+  const manutGas=300;
 
-  let lista = eletricos.map(e => {
-    const gastoEle = (kmMes/e.efic)*precoKwh;
-    const manutEle = manutGas*(1-e.manut/100);
-    const totalEle = gastoEle+manutEle;
-    const totalGas = gasAtual+manutGas;
-    const ecoMes = totalGas-totalEle;
-    const payback = ecoMes>0 ? e.preco/(ecoMes*12) : 999;
-    return {...e, gastoEle:Math.round(totalEle), ecoMes:Math.round(ecoMes), payback};
+  let lista=eletricos.map(e=>{
+    const gastoEle=(kmMes/e.efic)*precoKwh;
+    const manutEle=manutGas*(1-e.manut/100);
+    const totalEle=gastoEle+manutEle;
+    const totalGas=gasAtual+manutGas;
+    const ecoMes=totalGas-totalEle;
+    const payback=ecoMes>0?e.preco/(ecoMes*12):999;
+    return {...e,gastoEle:Math.round(totalEle),ecoMes:Math.round(ecoMes),payback};
   });
 
-  if (faixa>0&&faixa<999999) lista = lista.filter(e=>e.preco<=faixa);
-  if (faixa===999999) lista = lista.filter(e=>e.preco>300000);
+  if (faixa>0&&faixa<999999) lista=lista.filter(e=>e.preco<=faixa);
+  if (faixa===999999) lista=lista.filter(e=>e.preco>300000);
   lista.sort((a,b)=>a.payback-b.payback);
 
-  if (lista.length===0) {
-    document.getElementById('modelos-lista').innerHTML='<div class="card"><p style="font-size:14px;color:#aaa;">Nenhum modelo encontrado.</p></div>';
-    return;
-  }
+  if (lista.length===0) { document.getElementById('modelos-lista').innerHTML='<div class="card"><p style="font-size:14px;color:#aaa;">Nenhum modelo encontrado.</p></div>'; return; }
 
   let html='';
   lista.forEach((e,i)=>{
-    const isMelhor = i===0&&e.ecoMes>0;
-    let badgeClass='badge-green', badgeText='';
-    if (e.ecoMes<=0) { badgeClass='badge-red'; badgeText='Não compensa'; }
-    else if (e.payback>10) { badgeClass='badge-yellow'; badgeText='Retorno longo'; }
-    else { badgeClass='badge-green'; badgeText=e.payback.toFixed(1)+' anos p/ pagar'; }
+    const isMelhor=i===0&&e.ecoMes>0;
+    let badgeClass='badge-green',badgeText='';
+    if (e.ecoMes<=0){badgeClass='badge-red';badgeText='Não compensa';}
+    else if (e.payback>10){badgeClass='badge-yellow';badgeText='Retorno longo';}
+    else{badgeClass='badge-green';badgeText=e.payback.toFixed(1)+' anos p/ pagar';}
     html+=`<div class="modelo-card ${isMelhor?'destaque':''}">
       <div class="modelo-header">
         <div>
@@ -615,4 +654,3 @@ updateHeader();
 </script>
 </body>
 </html>
-
