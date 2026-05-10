@@ -28,7 +28,6 @@
     .hero { text-align: center; margin-bottom: 2rem; }
     .hero h1 { font-size: 28px; font-weight: 600; margin-bottom: 8px; }
     .hero p { font-size: 15px; color: #666; }
-    
     .tab-row { display: flex; gap: 8px; margin-bottom: 1.5rem; flex-wrap: wrap; }
     .tab { padding: 8px 18px; font-size: 13px; border-radius: 8px; border: 1px solid #e5e5e5; cursor: pointer; background: #fff; color: #666; font-family: 'Inter', sans-serif; font-weight: 500; transition: all 0.15s; }
     .tab.active { border-color: #1a1a1a; color: #1a1a1a; }
@@ -49,6 +48,8 @@
     .btn:hover { background: #333; }
     .btn.green { background: #16a34a; }
     .btn.green:hover { background: #15803d; }
+    .btn.outline { background: #fff; color: #1a1a1a; border: 1px solid #e5e5e5; }
+    .btn.outline:hover { background: #f5f5f3; }
     .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
     .metric { background: #f9f9f8; border-radius: 8px; padding: 1rem; }
     .metric-label { font-size: 12px; color: #888; margin-bottom: 4px; }
@@ -82,6 +83,23 @@
     .verdict.medium .verdict-pill { background: #d1fae5; color: #065f46; }
     .verdict.warning .verdict-pill { background: #fef3c7; color: #92400e; }
     .verdict.danger .verdict-pill { background: #fee2e2; color: #b91c1c; }
+    /* Botão premium inline */
+    .premium-cta { background: #f9f9f8; border: 1px dashed #d1d5db; border-radius: 12px; padding: 1.25rem; text-align: center; margin-top: 1rem; }
+    .premium-cta p { font-size: 14px; color: #555; margin-bottom: 10px; line-height: 1.5; }
+    .premium-cta strong { color: #1a1a1a; }
+    /* Ideal card */
+    .ideal-card { background: #fff; border: 2px solid #16a34a; border-radius: 12px; padding: 1.25rem; margin-bottom: 10px; }
+    .ideal-rank { font-size: 11px; font-weight: 600; color: #15803d; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+    .ideal-nome { font-size: 16px; font-weight: 600; color: #1a1a1a; margin-bottom: 4px; }
+    .ideal-sub { font-size: 13px; color: #888; margin-bottom: 12px; }
+    .ideal-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .ideal-stat { background: #f9f9f8; border-radius: 8px; padding: 8px; text-align: center; }
+    .ideal-stat-val { font-size: 14px; font-weight: 600; color: #1a1a1a; }
+    .ideal-stat-label { font-size: 11px; color: #aaa; margin-top: 2px; }
+    .ideal-why { font-size: 13px; color: #555; margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0f0f0; line-height: 1.5; }
+    .ideal-card.runner { border-color: #e5e5e5; border-width: 1px; }
+    .ideal-card.runner .ideal-rank { color: #666; }
+    /* Financiamento */
     .fin-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 1rem 0; }
     .fin-card { border-radius: 10px; padding: 1rem; border: 1px solid #e5e5e5; }
     .fin-card.gas { background: #fff5f5; border-color: #fecaca; }
@@ -142,6 +160,7 @@
       .grid-2, .grid-3 { grid-template-columns: 1fr; }
       .result-grid, .fin-compare { grid-template-columns: 1fr; }
       .hero h1 { font-size: 22px; }
+      .ideal-stats { grid-template-columns: 1fr 1fr; }
     }
   </style>
 </head>
@@ -155,6 +174,7 @@
   </div>
 </header>
 
+<!-- Modal login/cadastro -->
 <div class="modal-overlay" id="modal" style="display:none;">
   <div class="modal">
     <button class="modal-close" onclick="closeModal()">×</button>
@@ -171,17 +191,26 @@
   </div>
 </div>
 
+<!-- Modal upgrade premium -->
 <div class="modal-overlay" id="modal-upgrade" style="display:none;">
   <div class="modal">
     <button class="modal-close" onclick="closeUpgrade()">×</button>
-    <h2>Assinar Premium</h2>
-    <p>Desbloqueie todas as funcionalidades por R$ 9,90/mês.</p>
+    <h2>Elétrico Vale? Premium</h2>
+    <p>Acesso completo por 1 ano. Pague uma vez, use à vontade.</p>
+    <div class="premium-features">
+      <div class="premium-feature">Simulação de financiamento completa</div>
+      <div class="premium-feature">Meu elétrico ideal — sugestão personalizada</div>
+      <div class="premium-feature">Projeção de economia para até 10 anos</div>
+      <div class="premium-feature">Histórico de abastecimentos na nuvem</div>
+    </div>
+    <div class="price-tag">R$ 19,90<span style="font-size:16px;font-weight:400;color:#888"> / 1 ano</span></div>
+    <div class="price-sub">Pagamento único. Sem renovação automática.</div>
     <div id="payment-form">
       <label style="font-size:13px;color:#555;display:block;margin-bottom:6px;">Dados do cartão</label>
       <div id="card-element"></div>
       <div id="card-errors"></div>
-      <button class="btn green" onclick="handlePayment()">Assinar por R$ 9,90/mês</button>
-      <p style="font-size:12px;color:#bbb;margin-top:12px;text-align:center;">Pagamento seguro via Stripe. Cancele quando quiser.</p>
+      <button class="btn green" onclick="handlePayment()">Ativar Premium por R$ 19,90</button>
+      <p style="font-size:12px;color:#bbb;margin-top:12px;text-align:center;">Pagamento seguro via Stripe.</p>
     </div>
     <div id="payment-msg"></div>
   </div>
@@ -195,7 +224,7 @@
 
   <div class="tab-row">
     <button class="tab active" onclick="showTab('calc')" id="tab-calc">Calculadora</button>
-    <button class="tab" onclick="showTab('financiamento')" id="tab-financiamento">Financiamento</button>
+    <button class="tab" onclick="showTab('financiamento')" id="tab-financiamento">Financiamento 🔒</button>
     <button class="tab" onclick="showTab('modelos')" id="tab-modelos">Modelos do mercado</button>
     <button class="tab" onclick="showTab('abast')" id="tab-abast">Abastecimentos 🔒</button>
     <button class="tab" onclick="showTab('projecao')" id="tab-projecao">Projeção anual 🔒</button>
@@ -304,11 +333,431 @@
         <div class="verdict-title" id="verdict-title">-</div>
         <div class="verdict-text" id="verdict-text">-</div>
       </div>
+
+      <!-- Botão Meu Elétrico Ideal -->
+      <div id="ideal-cta"></div>
+      <div id="ideal-resultado" style="display:none; margin-top:1rem;"></div>
     </div>
   </div>
 
-  <!-- ABA FINANCIAMENTO -->
-  <div id="view-financiamento" style="display:none;">
+  <!-- ABA FINANCIAMENTO (premium) -->
+  <div id="view-financiamento" style="display:none;"></div>
+
+  <!-- ABA MODELOS DO MERCADO -->
+  <div id="view-modelos" style="display:none;">
+    <p class="section-title">Seu perfil de uso</p>
+    <div class="card">
+      <div class="grid-2">
+        <div class="field"><label>Km rodados por mês</label><input type="number" id="m-km" value="1500" min="100" step="50" /></div>
+        <div class="field"><label>Preço energia (R$/kWh)</label><input type="number" id="m-kwh" value="0.85" min="0.1" step="0.01" /></div>
+        <div class="field"><label>Gasto atual gasolina/mês (R$)</label><input type="number" id="m-gasatual" value="780" min="0" step="10" /></div>
+        <div class="field"><label>Filtrar por faixa de preço</label>
+          <select id="m-faixa">
+            <option value="0">Todos os modelos</option>
+            <option value="150000">Até R$ 150 mil</option>
+            <option value="200000">Até R$ 200 mil</option>
+            <option value="300000">Até R$ 300 mil</option>
+            <option value="999999">Acima de R$ 300 mil</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn" onclick="renderModelos()" style="margin-top:12px;">Comparar modelos →</button>
+    </div>
+    <div id="modelos-lista"></div>
+  </div>
+
+  <div id="view-abast" style="display:none;"></div>
+  <div id="view-projecao" style="display:none;"></div>
+</div>
+
+<p style="font-size:11px;color:#bbb;max-width:720px;margin:0 auto;padding:0 1.5rem 1.5rem;line-height:1.6;text-align:center;">* Os preços dos veículos são referências para modelos 0km 2026 e podem variar por região, concessionária e versão. Os cálculos são estimativas baseadas nos dados informados e não consideram variações no preço da gasolina, energia elétrica, seguro, IPVA, depreciação ou condições específicas de uso.</p>
+<footer>Elétrico Vale? · Feito para ajudar brasileiros a tomar melhores decisões</footer>
+
+<script>
+const SUPABASE_URL = 'https://bspecfiuptgeuynqkjzk.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_Qn_PqtYz6oVTt26njfoGMA_T19bFAmA';
+const STRIPE_KEY   = 'pk_test_51TVOfmRo9mDmHaPCB3ASQtwh9FyQqRpyugXgajzb3oOvoN9OxUuBhlgYkpRv36YWcLEpF0PnZqGat2Xkyr68dlM700sgA3nFti';
+const PRICE_ID     = 'price_1TVcgdRo9mDmHaPC5NTn9hQ3'; // pagamento único 1 ano
+
+const sb     = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const stripe = Stripe(STRIPE_KEY);
+let cardElement = null;
+
+const carrosGasolina = [
+  { nome:"Fiat Argo",          preco:90990,  consumo:13.2, segmento:"Hatch compacto" },
+  { nome:"Hyundai HB20",       preco:96590,  consumo:13.5, segmento:"Hatch compacto" },
+  { nome:"Chevrolet Onix",     preco:101790, consumo:13.0, segmento:"Hatch compacto" },
+  { nome:"Volkswagen Polo",    preco:95790,  consumo:13.8, segmento:"Hatch compacto" },
+  { nome:"Fiat Cronos",        preco:99990,  consumo:13.0, segmento:"Sedan compacto" },
+  { nome:"Volkswagen Virtus",  preco:111990, consumo:13.5, segmento:"Sedan compacto" },
+  { nome:"Nissan Versa",       preco:114990, consumo:13.0, segmento:"Sedan compacto" },
+  { nome:"Toyota Yaris",       preco:119990, consumo:14.2, segmento:"Hatch/Sedan" },
+  { nome:"Honda City",         preco:129900, consumo:13.5, segmento:"Sedan" },
+  { nome:"Toyota Corolla",     preco:162990, consumo:12.5, segmento:"Sedan médio" },
+  { nome:"Fiat Pulse",         preco:129990, consumo:12.0, segmento:"SUV compacto" },
+  { nome:"Volkswagen T-Cross", preco:138990, consumo:12.5, segmento:"SUV compacto" },
+  { nome:"Jeep Renegade",      preco:149990, consumo:11.5, segmento:"SUV compacto" },
+  { nome:"Nissan Kicks",       preco:144990, consumo:12.0, segmento:"SUV compacto" },
+  { nome:"Hyundai Creta",      preco:151290, consumo:12.0, segmento:"SUV compacto" },
+  { nome:"Chevrolet Tracker",  preco:152990, consumo:12.5, segmento:"SUV compacto" },
+  { nome:"Renault Captur",     preco:159990, consumo:12.0, segmento:"SUV compacto" },
+  { nome:"Ford Ranger",        preco:319990, consumo:10.0, segmento:"Picape" },
+  { nome:"Toyota Hilux",       preco:299990, consumo:10.5, segmento:"Picape" },
+  { nome:"Volkswagen Amarok",  preco:389990, consumo:9.5,  segmento:"Picape" },
+];
+
+const eletricos = [
+  { nome:"BYD Dolphin Mini",    preco:115900, efic:7.2, autonomia:280, manut:40, segmento:"Compacto" },
+  { nome:"BYD Dolphin",         preco:149800, efic:6.8, autonomia:400, manut:40, segmento:"Compacto" },
+  { nome:"GWM ORA 03",          preco:169990, efic:6.5, autonomia:420, manut:40, segmento:"Compacto" },
+  { nome:"BYD Seal",            preco:239800, efic:6.2, autonomia:510, manut:40, segmento:"Sedan" },
+  { nome:"Chevrolet Equinox EV",preco:249990, efic:6.5, autonomia:480, manut:38, segmento:"SUV" },
+  { nome:"Fiat 500e",           preco:249990, efic:7.0, autonomia:320, manut:38, segmento:"Compacto" },
+  { nome:"Volvo EX30",          preco:299990, efic:6.3, autonomia:480, manut:35, segmento:"SUV compacto" },
+  { nome:"BMW iX1",             preco:399990, efic:6.1, autonomia:413, manut:33, segmento:"SUV premium" },
+  { nome:"Volvo EX40",          preco:389990, efic:5.9, autonomia:418, manut:35, segmento:"SUV" },
+  { nome:"BYD Han",             preco:349800, efic:5.8, autonomia:521, manut:40, segmento:"Sedan premium" },
+  { nome:"BYD Tan",             preco:399800, efic:4.9, autonomia:480, manut:40, segmento:"SUV" },
+  { nome:"Porsche Taycan",      preco:749990, efic:5.2, autonomia:464, manut:30, segmento:"Esportivo" },
+];
+
+let currentUser=null, isPremium=false, abastecimentos=[], modalMode='login', currentActiveTab='calc';
+
+// Verifica se premium_until ainda é válido
+function checkPremiumValidity(profile) {
+  if (!profile) return false;
+  if (profile.is_premium && !profile.premium_until) return true; // legado
+  if (!profile.premium_until) return false;
+  return new Date(profile.premium_until) > new Date();
+}
+
+sb.auth.onAuthStateChange(async (event, session) => {
+  currentUser = session?.user || null;
+  if (currentUser) { await checkPremium(); } else { isPremium = false; }
+  updateHeader();
+  if (currentActiveTab === 'abast') renderAbastView();
+  if (currentActiveTab === 'projecao') renderProjecaoView();
+  if (currentActiveTab === 'financiamento') renderFinanciamentoView();
+});
+
+async function checkPremium() {
+  if (!currentUser) return;
+  const { data } = await sb.from('profiles').select('is_premium, premium_until').eq('id', currentUser.id).single();
+  isPremium = checkPremiumValidity(data);
+}
+
+function premiumExpiryText() {
+  // Exibe data de expiração no header
+  return '';
+}
+
+function updateHeader() {
+  const hr = document.getElementById('header-right');
+  if (currentUser) {
+    const email = currentUser.email.split('@')[0];
+    hr.innerHTML = `
+      <span class="user-name">${email}</span>
+      <span class="badge-plan ${isPremium?'badge-premium':'badge-free'}">${isPremium?'Premium ✓':'Gratuito'}</span>
+      ${!isPremium?'<button class="btn-sm green" onclick="openUpgrade()">Premium →</button>':''}
+      <button class="btn-sm" onclick="logout()">Sair</button>`;
+  } else {
+    hr.innerHTML = `
+      <button class="btn-sm" onclick="openModal('login')">Entrar</button>
+      <button class="btn-sm primary" onclick="openModal('signup')">Criar conta</button>`;
+  }
+}
+
+async function logout() { await sb.auth.signOut(); }
+function openModal(mode) { document.getElementById('modal').style.display='flex'; switchModal(mode); }
+function closeModal() { document.getElementById('modal').style.display='none'; document.getElementById('auth-msg').innerHTML=''; }
+function switchModal(mode) {
+  modalMode = mode;
+  document.getElementById('mtab-login').className='modal-tab'+(mode==='login'?' active':'');
+  document.getElementById('mtab-signup').className='modal-tab'+(mode==='signup'?' active':'');
+  document.getElementById('modal-title').textContent = mode==='login' ? 'Entrar' : 'Criar conta';
+  document.getElementById('modal-desc').textContent  = mode==='login' ? 'Acesse sua conta para salvar seus dados.' : 'Crie sua conta gratuita agora.';
+  document.getElementById('auth-msg').innerHTML = '';
+}
+async function handleAuth() {
+  const email    = document.getElementById('auth-email').value;
+  const password = document.getElementById('auth-password').value;
+  const msg      = document.getElementById('auth-msg');
+  if (!email||!password) { msg.innerHTML='<p class="msg-error">Preencha e-mail e senha.</p>'; return; }
+  if (modalMode==='login') {
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) { msg.innerHTML='<p class="msg-error">E-mail ou senha incorretos.</p>'; return; }
+    closeModal();
+  } else {
+    const { error } = await sb.auth.signUp({ email, password });
+    if (error) { msg.innerHTML=`<p class="msg-error">${error.message}</p>`; return; }
+    msg.innerHTML='<p class="msg-success">Conta criada! Verifique seu e-mail para confirmar.</p>';
+  }
+}
+
+function openUpgrade() {
+  if (!currentUser) { openModal('login'); return; }
+  document.getElementById('modal-upgrade').style.display='flex';
+  document.getElementById('payment-msg').innerHTML='';
+  setTimeout(() => {
+    if (!cardElement) {
+      const elements = stripe.elements();
+      cardElement = elements.create('card', { style: { base: { fontSize:'16px', color:'#1a1a1a', fontFamily:'Inter, sans-serif' } } });
+      cardElement.mount('#card-element');
+    }
+  }, 100);
+}
+function closeUpgrade() { document.getElementById('modal-upgrade').style.display='none'; }
+
+async function handlePayment() {
+  const msg    = document.getElementById('payment-msg');
+  const errors = document.getElementById('card-errors');
+  errors.textContent = '';
+  msg.innerHTML = '<p style="font-size:13px;color:#888;">Processando pagamento...</p>';
+
+  const { paymentMethod, error } = await stripe.createPaymentMethod({ type:'card', card:cardElement });
+  if (error) { errors.textContent = error.message; msg.innerHTML=''; return; }
+
+  // Calcula premium_until = hoje + 1 ano
+  const premiumUntil = new Date();
+  premiumUntil.setFullYear(premiumUntil.getFullYear() + 1);
+
+  await sb.from('profiles').upsert({
+    id: currentUser.id,
+    is_premium: true,
+    premium_until: premiumUntil.toISOString()
+  });
+
+  isPremium = true;
+  closeUpgrade();
+  updateHeader();
+  msg.innerHTML = '';
+  alert('🎉 Premium ativado! Acesso liberado por 1 ano.');
+  if (currentActiveTab==='abast') renderAbastView();
+  if (currentActiveTab==='projecao') renderProjecaoView();
+  if (currentActiveTab==='financiamento') renderFinanciamentoView();
+}
+
+function showTab(t) {
+  currentActiveTab = t;
+  ['calc','financiamento','modelos','abast','projecao'].forEach(v => {
+    document.getElementById('view-'+v).style.display = v===t ? 'block' : 'none';
+    document.getElementById('tab-'+v).className = 'tab'+(v===t?' active':'');
+  });
+  if (t==='abast') renderAbastView();
+  if (t==='projecao') renderProjecaoView();
+  if (t==='financiamento') renderFinanciamentoView();
+  if (t==='modelos') renderModelos();
+}
+
+function premiumLockHTML(feature) {
+  return `<div class="premium-lock">
+    <h3>🔒 Funcionalidade Premium</h3>
+    <p>Desbloqueie <strong>${feature}</strong> e muito mais por apenas R$ 19,90 — acesso por 1 ano, sem renovação automática.</p>
+    <div class="premium-features">
+      <div class="premium-feature">Simulação de financiamento completa</div>
+      <div class="premium-feature">Meu elétrico ideal — sugestão personalizada</div>
+      <div class="premium-feature">Projeção de economia para até 10 anos</div>
+      <div class="premium-feature">Histórico de abastecimentos na nuvem</div>
+    </div>
+    <div class="price-tag">R$ 19,90<span style="font-size:16px;font-weight:400;color:#888"> / 1 ano</span></div>
+    <div class="price-sub" style="margin-bottom:1rem;">Pagamento único. Sem renovação automática.</div>
+    <button class="btn green" onclick="openUpgrade()">Ativar Premium →</button>
+  </div>`;
+}
+
+function fmt(v) { return 'R$ '+Math.round(v).toLocaleString('pt-BR'); }
+
+// ── Gasolina ──
+function preencherGasolina() {
+  const idx = document.getElementById('select-gasolina').value;
+  const box = document.getElementById('gasolina-info-box');
+  if (idx==='') { box.style.display='none'; return; }
+  const c = carrosGasolina[parseInt(idx)];
+  document.getElementById('consumo').value     = c.consumo;
+  document.getElementById('valor_atual').value = c.preco;
+  document.getElementById('ginfo-seg').textContent   = c.segmento;
+  document.getElementById('ginfo-cons').textContent  = c.consumo+' km/l';
+  document.getElementById('ginfo-preco').textContent = 'R$ '+c.preco.toLocaleString('pt-BR');
+  document.getElementById('bar-gas-label').textContent = c.nome;
+  box.style.display = 'block';
+}
+
+// ── Elétrico ──
+function preencherModelo() {
+  const idx = document.getElementById('select-modelo').value;
+  const box = document.getElementById('modelo-info-box');
+  if (idx==='') { box.style.display='none'; return; }
+  const e = eletricos[parseInt(idx)];
+  document.getElementById('efic').value            = e.efic;
+  document.getElementById('valor_eletrico').value  = e.preco;
+  document.getElementById('economia_manut').value  = e.manut;
+  document.getElementById('info-seg').textContent  = e.segmento;
+  document.getElementById('info-auto').textContent = e.autonomia+' km';
+  document.getElementById('info-efic').textContent = e.efic+' km/kWh';
+  document.getElementById('info-manut').textContent= e.manut+'%';
+  box.style.display = 'block';
+  document.getElementById('bar-ele-label').textContent = e.nome;
+}
+
+// ── Calculadora principal ──
+function calcular() {
+  const consumo       = parseFloat(document.getElementById('consumo').value)        || 12;
+  const precoGas      = parseFloat(document.getElementById('preco_gas').value)      || 6.20;
+  const kmMes         = parseFloat(document.getElementById('km_mes').value)         || 1500;
+  const valorAtual    = parseFloat(document.getElementById('valor_atual').value)    || 60000;
+  const efic          = parseFloat(document.getElementById('efic').value)           || 6;
+  const precoKwh      = parseFloat(document.getElementById('preco_kwh').value)      || 0.85;
+  const valorEletrico = parseFloat(document.getElementById('valor_eletrico').value) || 180000;
+  const econManut     = parseFloat(document.getElementById('economia_manut').value) || 40;
+
+  const gastoGas  = (kmMes/consumo)*precoGas;
+  const gastoEle  = (kmMes/efic)*precoKwh;
+  const manutGas  = 300;
+  const manutEle  = manutGas*(1-econManut/100);
+  const totalGas  = gastoGas+manutGas;
+  const totalEle  = gastoEle+manutEle;
+  const ecoMes    = totalGas-totalEle;
+  const difValor  = valorEletrico-valorAtual;
+  const payback   = difValor>0&&ecoMes>0 ? difValor/(ecoMes*12) : (ecoMes<=0?999:0);
+
+  document.getElementById('r-gas').textContent = fmt(totalGas);
+  document.getElementById('r-ele').textContent = fmt(totalEle);
+  document.getElementById('r-eco').textContent = ecoMes>0 ? fmt(ecoMes) : 'R$ 0';
+  document.getElementById('r-pay').textContent = difValor<=0 ? 'Já vale!' : ecoMes<=0 ? '—' : payback>0 ? payback.toFixed(1)+' anos' : '—';
+
+  const max = Math.max(totalGas, totalEle);
+  document.getElementById('bar-gas').style.width = Math.round((totalGas/max)*100)+'%';
+  document.getElementById('bar-ele').style.width = Math.round((totalEle/max)*100)+'%';
+  document.getElementById('bar-gas-val').textContent = fmt(totalGas)+'/mês';
+  document.getElementById('bar-ele-val').textContent = fmt(totalEle)+'/mês';
+
+  const idxEle     = document.getElementById('select-modelo').value;
+  const nomeModelo = idxEle!=='' ? eletricos[parseInt(idxEle)].nome : 'o elétrico';
+  const vBox  = document.getElementById('verdict-box');
+  const vPill = document.getElementById('verdict-pill');
+  const vTitle= document.getElementById('verdict-title');
+  const vText = document.getElementById('verdict-text');
+  vBox.className = 'verdict';
+
+  if (ecoMes<=0) {
+    vBox.classList.add('danger');
+    vPill.textContent  = '⚠ Não compensa agora';
+    vTitle.textContent = nomeModelo+' não compensa agora';
+    vText.textContent  = 'Com seu perfil de uso, esse elétrico custaria mais caro no dia a dia. Considere rodar mais km por mês ou buscar um modelo mais acessível.';
+  } else if (difValor<=0) {
+    vBox.classList.add('now');
+    vPill.textContent  = '⚡ Já vale agora';
+    vTitle.textContent = nomeModelo+' já é mais barato!';
+    vText.textContent  = 'O elétrico custa menos que o carro comparado e ainda economiza '+fmt(ecoMes)+'/mês no dia a dia. Trocar agora faz sentido financeiro imediato.';
+  } else if (difValor<=30000) {
+    vBox.classList.add('now');
+    vPill.textContent  = '⚡ Já vale agora';
+    vTitle.textContent = nomeModelo+' já vale a pena!';
+    vText.textContent  = 'A diferença de preço é de apenas '+fmt(difValor)+' e você economiza '+fmt(ecoMes)+'/mês. O retorno vem em '+payback.toFixed(1)+' anos — uma troca que se paga rápido.';
+  } else if (payback<=3) {
+    vBox.classList.add('fast');
+    vPill.textContent  = '✓ Retorno rápido';
+    vTitle.textContent = nomeModelo+' vale a pena!';
+    vText.textContent  = 'Você economizaria '+fmt(ecoMes)+'/mês e recuperaria o investimento em apenas '+payback.toFixed(1)+' anos. Um retorno excelente.';
+  } else if (payback<=7) {
+    vBox.classList.add('medium');
+    vPill.textContent  = '~ Vale a médio prazo';
+    vTitle.textContent = 'Vale, com planejamento';
+    vText.textContent  = 'Você economizaria '+fmt(ecoMes)+'/mês com o '+nomeModelo+', recuperando o investimento em '+payback.toFixed(1)+' anos. Faz sentido se você planeja ficar com o carro por bastante tempo.';
+  } else {
+    vBox.classList.add('warning');
+    vPill.textContent  = '⏳ Retorno longo';
+    vTitle.textContent = 'Vale, mas o retorno é demorado';
+    vText.textContent  = 'Você economizaria '+fmt(ecoMes)+'/mês, mas levaria '+payback.toFixed(1)+' anos para recuperar o investimento no '+nomeModelo+'. Considere um modelo mais acessível.';
+  }
+
+  document.getElementById('resultados').style.display = 'block';
+  document.getElementById('ideal-resultado').style.display = 'none';
+
+  // Mostrar botão "Meu elétrico ideal"
+  const ctaEl = document.getElementById('ideal-cta');
+  if (!isPremium) {
+    ctaEl.innerHTML = `<div class="premium-cta">
+      <p>🔍 <strong>Meu elétrico ideal</strong> — descubra qual modelo do mercado combina melhor com o seu perfil de uso e orçamento.</p>
+      <button class="btn outline" style="max-width:280px;margin:0 auto;" onclick="openUpgrade()">🔒 Desbloquear por R$ 19,90 / 1 ano</button>
+    </div>`;
+  } else {
+    ctaEl.innerHTML = `<button class="btn outline" style="margin-top:0;" onclick="mostrarIdeal(${kmMes},${precoKwh},${totalGas},${valorAtual})">🔍 Ver meu elétrico ideal →</button>`;
+  }
+}
+
+// ── Meu elétrico ideal ──
+function mostrarIdeal(kmMes, precoKwh, totalGasMes, orcamento) {
+  const manutGas = 300;
+  let lista = eletricos.map(e => {
+    const gastoEle  = (kmMes/e.efic)*precoKwh;
+    const manutEle  = manutGas*(1-e.manut/100);
+    const totalEle  = gastoEle+manutEle;
+    const ecoMes    = totalGasMes - totalEle;
+    const difValor  = e.preco - orcamento;
+    const payback   = ecoMes>0 && difValor>0 ? difValor/(ecoMes*12) : (ecoMes<=0?999:(difValor<=0?0:999));
+    // Score: penaliza payback longo, premia economia alta
+    const score = ecoMes>0 ? (ecoMes*12) / Math.max(payback,0.5) : -1;
+    return { ...e, ecoMes:Math.round(ecoMes), difValor, payback, score };
+  }).filter(e => e.ecoMes > 0)
+    .sort((a,b) => b.score - a.score);
+
+  const el = document.getElementById('ideal-resultado');
+
+  if (lista.length === 0) {
+    el.innerHTML = `<div class="card"><p style="font-size:14px;color:#888;">Nenhum elétrico compensa com seu perfil atual. Tente aumentar os km rodados por mês.</p></div>`;
+    el.style.display = 'block';
+    return;
+  }
+
+  function paybackText(e) {
+    if (e.difValor <= 0) return 'já é mais barato';
+    if (e.payback < 1) return 'menos de 1 ano';
+    return e.payback.toFixed(1)+' anos de retorno';
+  }
+
+  function whyText(e, rank) {
+    if (rank === 0) {
+      if (e.difValor <= 0) return `Melhor custo-benefício: é mais barato que seu carro atual e ainda economiza ${fmt(e.ecoMes)}/mês.`;
+      return `Melhor equilíbrio entre economia (${fmt(e.ecoMes)}/mês) e retorno do investimento em ${e.payback.toFixed(1)} anos.`;
+    }
+    if (rank === 1) return `Segunda melhor opção. Economia de ${fmt(e.ecoMes)}/mês com retorno em ${e.payback.toFixed(1)} anos.`;
+    return `Terceira opção. Economia de ${fmt(e.ecoMes)}/mês.`;
+  }
+
+  const top = lista.slice(0, 3);
+  let html = '<p class="section-title">Meu elétrico ideal</p>';
+
+  top.forEach((e, i) => {
+    const isFirst = i === 0;
+    html += `<div class="ideal-card ${isFirst?'':'runner'}">
+      <div class="ideal-rank">${isFirst?'⭐ Melhor opção para você':`${i+1}ª opção`}</div>
+      <div class="ideal-nome">${e.nome}</div>
+      <div class="ideal-sub">R$ ${e.preco.toLocaleString('pt-BR')} · ${e.segmento} · ${e.autonomia} km autonomia</div>
+      <div class="ideal-stats">
+        <div class="ideal-stat"><div class="ideal-stat-val" style="color:#16a34a;">${fmt(e.ecoMes)}/mês</div><div class="ideal-stat-label">economia</div></div>
+        <div class="ideal-stat"><div class="ideal-stat-val">${paybackText(e)}</div><div class="ideal-stat-label">payback</div></div>
+        <div class="ideal-stat"><div class="ideal-stat-val">${e.efic.toFixed(1)} km/kWh</div><div class="ideal-stat-label">eficiência</div></div>
+      </div>
+      <div class="ideal-why">${whyText(e, i)}</div>
+    </div>`;
+  });
+
+  el.innerHTML = html;
+  el.style.display = 'block';
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ── Financiamento (premium) ──
+function renderFinanciamentoView() {
+  const el = document.getElementById('view-financiamento');
+  if (!currentUser) {
+    el.innerHTML=`<div class="premium-lock"><h3>Faça login para continuar</h3><p>Entre na sua conta para acessar a simulação de financiamento.</p><button class="btn" style="max-width:200px;margin:0 auto;" onclick="openModal('login')">Entrar →</button></div>`;
+    return;
+  }
+  if (!isPremium) { el.innerHTML=premiumLockHTML('simulação de financiamento'); return; }
+
+  el.innerHTML = `
     <p class="section-title">Simular financiamento</p>
     <div class="card">
       <div class="grid-2" style="margin-bottom:16px;">
@@ -406,333 +855,95 @@
         <div class="fin-winner-val" id="fin-winner-val">-</div>
         <div class="fin-winner-label" id="fin-winner-label">-</div>
       </div>
-      <p class="info-tip">* Manutenção estimada em R$ 300/mês para gasolina, com desconto para o elétrico conforme % informado. Parcelas calculadas pela tabela Price. Preços de gasolina, energia e condições de financiamento podem variar. Use como estimativa de referência.</p>
-    </div>
-  </div>
-
-  <!-- ABA MODELOS DO MERCADO -->
-  <div id="view-modelos" style="display:none;">
-    <p class="section-title">Seu perfil de uso</p>
-    <div class="card">
-      <div class="grid-2">
-        <div class="field"><label>Km rodados por mês</label><input type="number" id="m-km" value="1500" min="100" step="50" /></div>
-        <div class="field"><label>Preço energia (R$/kWh)</label><input type="number" id="m-kwh" value="0.85" min="0.1" step="0.01" /></div>
-        <div class="field"><label>Gasto atual gasolina/mês (R$)</label><input type="number" id="m-gasatual" value="780" min="0" step="10" /></div>
-        <div class="field"><label>Filtrar por faixa de preço</label>
-          <select id="m-faixa">
-            <option value="0">Todos os modelos</option>
-            <option value="150000">Até R$ 150 mil</option>
-            <option value="200000">Até R$ 200 mil</option>
-            <option value="300000">Até R$ 300 mil</option>
-            <option value="999999">Acima de R$ 300 mil</option>
-          </select>
-        </div>
-      </div>
-      <button class="btn" onclick="renderModelos()" style="margin-top:12px;">Comparar modelos →</button>
-    </div>
-    <div id="modelos-lista"></div>
-  </div>
-
-  <div id="view-abast" style="display:none;"></div>
-  <div id="view-projecao" style="display:none;"></div>
-</div>
-
-
-  <p style="font-size:11px;color:#bbb;max-width:720px;margin:0 auto;padding:0 1.5rem 1.5rem;line-height:1.6;text-align:center;">* Os preços dos veículos são referências para modelos 0km 2026 e podem variar por região, concessionária e versão. Os cálculos são estimativas baseadas nos dados informados e não consideram variações no preço da gasolina, energia elétrica, seguro, IPVA, depreciação ou condições específicas de uso.</p>
-<footer>Elétrico Vale? · Feito para ajudar brasileiros a tomar melhores decisões</footer>
-
-<script>
-const SUPABASE_URL = 'https://bspecfiuptgeuynqkjzk.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_Qn_PqtYz6oVTt26njfoGMA_T19bFAmA';
-const STRIPE_KEY = 'pk_test_51TVOfmRo9mDmHaPCB3ASQtwh9FyQqRpyugXgajzb3oOvoN9OxUuBhlgYkpRv36YWcLEpF0PnZqGat2Xkyr68dlM700sgA3nFti';
-
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-const stripe = Stripe(STRIPE_KEY);
-let cardElement = null;
-
-// Preços referência 0km 2026 (versão de entrada/intermediária mais vendida)
-const carrosGasolina = [
-  { nome:"Fiat Argo",          preco:90990,  consumo:13.2, segmento:"Hatch compacto" },
-  { nome:"Hyundai HB20",       preco:96590,  consumo:13.5, segmento:"Hatch compacto" },
-  { nome:"Chevrolet Onix",     preco:101790, consumo:13.0, segmento:"Hatch compacto" },
-  { nome:"Volkswagen Polo",    preco:95790,  consumo:13.8, segmento:"Hatch compacto" },
-  { nome:"Fiat Cronos",        preco:99990,  consumo:13.0, segmento:"Sedan compacto" },
-  { nome:"Volkswagen Virtus",  preco:111990, consumo:13.5, segmento:"Sedan compacto" },
-  { nome:"Nissan Versa",       preco:114990, consumo:13.0, segmento:"Sedan compacto" },
-  { nome:"Toyota Yaris",       preco:119990, consumo:14.2, segmento:"Hatch/Sedan" },
-  { nome:"Honda City",         preco:129900, consumo:13.5, segmento:"Sedan" },
-  { nome:"Toyota Corolla",     preco:162990, consumo:12.5, segmento:"Sedan médio" },
-  { nome:"Fiat Pulse",         preco:129990, consumo:12.0, segmento:"SUV compacto" },
-  { nome:"Volkswagen T-Cross", preco:138990, consumo:12.5, segmento:"SUV compacto" },
-  { nome:"Jeep Renegade",      preco:149990, consumo:11.5, segmento:"SUV compacto" },
-  { nome:"Nissan Kicks",       preco:144990, consumo:12.0, segmento:"SUV compacto" },
-  { nome:"Hyundai Creta",      preco:151290, consumo:12.0, segmento:"SUV compacto" },
-  { nome:"Chevrolet Tracker",  preco:152990, consumo:12.5, segmento:"SUV compacto" },
-  { nome:"Renault Captur",     preco:159990, consumo:12.0, segmento:"SUV compacto" },
-  { nome:"Ford Ranger",        preco:319990, consumo:10.0, segmento:"Picape" },
-  { nome:"Toyota Hilux",       preco:299990, consumo:10.5, segmento:"Picape" },
-  { nome:"Volkswagen Amarok",  preco:389990, consumo:9.5,  segmento:"Picape" },
-];
-
-const eletricos = [
-  { nome:"BYD Dolphin Mini",          preco:115900, efic:7.2, autonomia:300, manut:40, segmento:"Compacto" },
-  { nome:"BYD Dolphin",          preco:149800, efic:6.8, autonomia:400, manut:40, segmento:"Compacto" },
-  { nome:"GWM ORA 03",           preco:169990, efic:6.5, autonomia:420, manut:40, segmento:"Compacto" },
-  { nome:"BYD Seal",             preco:239800, efic:6.2, autonomia:510, manut:40, segmento:"Sedan" },
-  { nome:"Chevrolet Equinox EV", preco:249990, efic:6.5, autonomia:480, manut:38, segmento:"SUV" },
-  { nome:"Fiat 500e",            preco:249990, efic:7.0, autonomia:320, manut:38, segmento:"Compacto" },
-  { nome:"Volvo EX30",           preco:299990, efic:6.3, autonomia:480, manut:35, segmento:"SUV compacto" },
-  { nome:"BMW iX1",              preco:399990, efic:6.1, autonomia:413, manut:33, segmento:"SUV premium" },
-  { nome:"Volvo EX40",           preco:389990, efic:5.9, autonomia:418, manut:35, segmento:"SUV" },
-  { nome:"BYD Han",              preco:349800, efic:5.8, autonomia:521, manut:40, segmento:"Sedan premium" },
-  { nome:"BYD Tan",              preco:399800, efic:4.9, autonomia:480, manut:40, segmento:"SUV" },
-  { nome:"Porsche Taycan",       preco:749990, efic:5.2, autonomia:464, manut:30, segmento:"Esportivo" },
-];
-
-let currentUser=null,isPremium=false,abastecimentos=[],modalMode='login',currentActiveTab='calc';
-
-sb.auth.onAuthStateChange(async(event,session)=>{
-  currentUser=session?.user||null;
-  if(currentUser){await checkPremium();}else{isPremium=false;}
-  updateHeader();
-  if(currentActiveTab==='abast')renderAbastView();
-  if(currentActiveTab==='projecao')renderProjecaoView();
-});
-
-async function checkPremium(){
-  if(!currentUser)return;
-  const{data}=await sb.from('profiles').select('is_premium').eq('id',currentUser.id).single();
-  isPremium=data?.is_premium||false;
+      <p class="info-tip">* Manutenção estimada em R$ 300/mês para gasolina, com desconto para o elétrico conforme % informado. Parcelas calculadas pela tabela Price. Preços de gasolina, energia e condições de financiamento podem variar.</p>
+    </div>`;
 }
 
-function updateHeader(){
-  const hr=document.getElementById('header-right');
-  if(currentUser){
-    const email=currentUser.email.split('@')[0];
-    hr.innerHTML=`<span class="user-name">${email}</span>
-      <span class="badge-plan ${isPremium?'badge-premium':'badge-free'}">${isPremium?'Premium ✓':'Gratuito'}</span>
-      ${!isPremium?'<button class="btn-sm green" onclick="openUpgrade()">Upgrade →</button>':''}
-      <button class="btn-sm" onclick="logout()">Sair</button>`;
-  }else{
-    hr.innerHTML=`<button class="btn-sm" onclick="openModal('login')">Entrar</button>
-      <button class="btn-sm primary" onclick="openModal('signup')">Criar conta</button>`;
-  }
+function finPreencherGas() {
+  const idx = document.getElementById('fin-select-gas').value;
+  if (idx==='') return;
+  const c = carrosGasolina[parseInt(idx)];
+  document.getElementById('fin-val-gas').value      = c.preco;
+  document.getElementById('fin-consumo-gas').value  = c.consumo;
+}
+function finPreencherEle() {
+  const idx = document.getElementById('fin-select-ele').value;
+  if (idx==='') return;
+  const e = eletricos[parseInt(idx)];
+  document.getElementById('fin-val-ele').value = e.preco;
+  document.getElementById('fin-efic').value    = e.efic;
+  document.getElementById('fin-manut').value   = e.manut;
 }
 
-async function logout(){await sb.auth.signOut();}
-function openModal(mode){document.getElementById('modal').style.display='flex';switchModal(mode);}
-function closeModal(){document.getElementById('modal').style.display='none';document.getElementById('auth-msg').innerHTML='';}
-function switchModal(mode){
-  modalMode=mode;
-  document.getElementById('mtab-login').className='modal-tab'+(mode==='login'?' active':'');
-  document.getElementById('mtab-signup').className='modal-tab'+(mode==='signup'?' active':'');
-  document.getElementById('modal-title').textContent=mode==='login'?'Entrar':'Criar conta';
-  document.getElementById('modal-desc').textContent=mode==='login'?'Acesse sua conta para salvar seus dados.':'Crie sua conta gratuita agora.';
-  document.getElementById('auth-msg').innerHTML='';
-}
-async function handleAuth(){
-  const email=document.getElementById('auth-email').value;
-  const password=document.getElementById('auth-password').value;
-  const msg=document.getElementById('auth-msg');
-  if(!email||!password){msg.innerHTML='<p class="msg-error">Preencha e-mail e senha.</p>';return;}
-  if(modalMode==='login'){
-    const{error}=await sb.auth.signInWithPassword({email,password});
-    if(error){msg.innerHTML='<p class="msg-error">E-mail ou senha incorretos.</p>';return;}
-    closeModal();
-  }else{
-    const{error}=await sb.auth.signUp({email,password});
-    if(error){msg.innerHTML=`<p class="msg-error">${error.message}</p>`;return;}
-    msg.innerHTML='<p class="msg-success">Conta criada! Verifique seu e-mail para confirmar.</p>';
-  }
-}
-function openUpgrade(){
-  if(!currentUser){openModal('login');return;}
-  document.getElementById('modal-upgrade').style.display='flex';
-  document.getElementById('payment-msg').innerHTML='';
-  setTimeout(()=>{
-    if(!cardElement){
-      const elements=stripe.elements();
-      cardElement=elements.create('card',{style:{base:{fontSize:'16px',color:'#1a1a1a',fontFamily:'Inter, sans-serif'}}});
-      cardElement.mount('#card-element');
-    }
-  },100);
-}
-function closeUpgrade(){document.getElementById('modal-upgrade').style.display='none';}
-async function handlePayment(){
-  const msg=document.getElementById('payment-msg');
-  const errors=document.getElementById('card-errors');
-  errors.textContent='';
-  msg.innerHTML='<p style="font-size:13px;color:#888;">Processando pagamento...</p>';
-  const{paymentMethod,error}=await stripe.createPaymentMethod({type:'card',card:cardElement});
-  if(error){errors.textContent=error.message;msg.innerHTML='';return;}
-  await sb.from('profiles').upsert({id:currentUser.id,is_premium:true});
-  isPremium=true;closeUpgrade();updateHeader();msg.innerHTML='';
-  alert('🎉 Premium ativado! Bem-vindo ao plano completo.');
-  if(currentActiveTab==='abast')renderAbastView();
-  if(currentActiveTab==='projecao')renderProjecaoView();
-}
-function showTab(t){
-  currentActiveTab=t;
-  ['calc','financiamento','modelos','abast','projecao'].forEach(v=>{
-    document.getElementById('view-'+v).style.display=v===t?'block':'none';
-    document.getElementById('tab-'+v).className='tab'+(v===t?' active':'');
-  });
-  if(t==='abast')renderAbastView();
-  if(t==='projecao')renderProjecaoView();
-  if(t==='modelos')renderModelos();
-}
-function premiumLockHTML(feature){
-  return`<div class="premium-lock">
-    <h3>🔒 Funcionalidade Premium</h3>
-    <p>Faça upgrade para desbloquear <strong>${feature}</strong> e muito mais.</p>
-    <div class="premium-features">
-      <div class="premium-feature">Histórico de abastecimentos salvo na nuvem</div>
-      <div class="premium-feature">Projeção de economia para 1, 3 e 5 anos</div>
-      <div class="premium-feature">Relatórios mensais por e-mail</div>
-      <div class="premium-feature">Simulação com financiamento</div>
-    </div>
-    <div class="price-tag">R$ 9,90<span style="font-size:16px;font-weight:400;color:#888">/mês</span></div>
-    <div class="price-sub">Cancele quando quiser</div>
-    <button class="btn green" onclick="openUpgrade()">Assinar Premium →</button>
-  </div>`;
-}
-function fmt(v){return'R$ '+Math.round(v).toLocaleString('pt-BR');}
-
-function preencherGasolina(){
-  const idx=document.getElementById('select-gasolina').value;
-  const box=document.getElementById('gasolina-info-box');
-  if(idx===''){box.style.display='none';return;}
-  const c=carrosGasolina[parseInt(idx)];
-  document.getElementById('consumo').value=c.consumo;
-  document.getElementById('valor_atual').value=c.preco;
-  document.getElementById('ginfo-seg').textContent=c.segmento;
-  document.getElementById('ginfo-cons').textContent=c.consumo+' km/l';
-  document.getElementById('ginfo-preco').textContent='R$ '+c.preco.toLocaleString('pt-BR');
-  document.getElementById('bar-gas-label').textContent=c.nome;
-  box.style.display='block';
-}
-function preencherModelo(){
-  const idx=document.getElementById('select-modelo').value;
-  const box=document.getElementById('modelo-info-box');
-  if(idx===''){box.style.display='none';return;}
-  const e=eletricos[parseInt(idx)];
-  document.getElementById('efic').value=e.efic;
-  document.getElementById('valor_eletrico').value=e.preco;
-  document.getElementById('economia_manut').value=e.manut;
-  document.getElementById('info-seg').textContent=e.segmento;
-  document.getElementById('info-auto').textContent=e.autonomia+' km';
-  document.getElementById('info-efic').textContent=e.efic+' km/kWh';
-  document.getElementById('info-manut').textContent=e.manut+'%';
-  box.style.display='block';
-  document.getElementById('bar-ele-label').textContent=e.nome;
-}
-function finPreencherGas(){
-  const idx=document.getElementById('fin-select-gas').value;
-  if(idx==='')return;
-  const c=carrosGasolina[parseInt(idx)];
-  document.getElementById('fin-val-gas').value=c.preco;
-  document.getElementById('fin-consumo-gas').value=c.consumo;
-}
-function finPreencherEle(){
-  const idx=document.getElementById('fin-select-ele').value;
-  if(idx==='')return;
-  const e=eletricos[parseInt(idx)];
-  document.getElementById('fin-val-ele').value=e.preco;
-  document.getElementById('fin-efic').value=e.efic;
-  document.getElementById('fin-manut').value=e.manut;
-}
-function calcParcela(valor,entradaPct,prazo,jurosMes){
-  const entrada=valor*(entradaPct/100);
-  const principal=valor-entrada;
-  const i=jurosMes/100;
-  if(i===0)return principal/prazo;
+function calcParcela(valor, entradaPct, prazo, jurosMes) {
+  const principal = valor*(1 - entradaPct/100);
+  const i = jurosMes/100;
+  if (i===0) return principal/prazo;
   return principal*(i*Math.pow(1+i,prazo))/(Math.pow(1+i,prazo)-1);
 }
-function calcularFinanciamento(){
-  const valGas  =parseFloat(document.getElementById('fin-val-gas').value)||95790;
-  const valEle  =parseFloat(document.getElementById('fin-val-ele').value)||149800;
-  const entrada =parseFloat(document.getElementById('fin-entrada').value)||20;
-  const prazo   =parseFloat(document.getElementById('fin-prazo').value)||60;
-  const juros   =parseFloat(document.getElementById('fin-juros').value)||1.5;
-  const km      =parseFloat(document.getElementById('fin-km').value)||1500;
-  const consGas =parseFloat(document.getElementById('fin-consumo-gas').value)||12;
-  const precoGas=parseFloat(document.getElementById('fin-preco-gas').value)||6.20;
-  const eficEle =parseFloat(document.getElementById('fin-efic').value)||6.8;
-  const kwh     =parseFloat(document.getElementById('fin-kwh').value)||0.85;
-  const manutPct=parseFloat(document.getElementById('fin-manut').value)||40;
-  const manutBase=300;
-  const parcGas=calcParcela(valGas,entrada,prazo,juros);
-  const parcEle=calcParcela(valEle,entrada,prazo,juros);
-  const combGas=(km/consGas)*precoGas;
-  const combEle=(km/eficEle)*kwh;
-  const manutGas=manutBase;
-  const manutEle=manutBase*(1-manutPct/100);
-  const totalGas=parcGas+combGas+manutGas;
-  const totalEle=parcEle+combEle+manutEle;
-  const diff=totalGas-totalEle;
-  document.getElementById('fin-r-parc-gas').textContent=fmt(parcGas);
-  document.getElementById('fin-r-comb-gas').textContent=fmt(combGas);
-  document.getElementById('fin-r-manut-gas').textContent=fmt(manutGas);
-  document.getElementById('fin-r-total-gas').textContent=fmt(totalGas);
-  document.getElementById('fin-r-parc-ele').textContent=fmt(parcEle);
-  document.getElementById('fin-r-comb-ele').textContent=fmt(combEle);
-  document.getElementById('fin-r-manut-ele').textContent=fmt(manutEle);
-  document.getElementById('fin-r-total-ele').textContent=fmt(totalEle);
-  const wb=document.getElementById('fin-winner-box');
-  const wv=document.getElementById('fin-winner-val');
-  const wl=document.getElementById('fin-winner-label');
-  if(diff>0){wb.className='fin-winner';wv.textContent=fmt(diff)+'/mês mais barato';wl.textContent='⚡ O elétrico sai mais em conta todo mês, já contando a parcela do financiamento.';}
-  else if(diff<0){wb.className='fin-winner bad';wv.textContent=fmt(Math.abs(diff))+'/mês mais caro';wl.textContent='🚗 O elétrico ainda sai mais caro por mês. Considere um modelo mais acessível ou uma entrada maior.';}
-  else{wb.className='fin-winner';wv.textContent='Empate!';wl.textContent='O custo mensal total é praticamente igual.';}
+
+function calcularFinanciamento() {
+  const valGas   = parseFloat(document.getElementById('fin-val-gas').value)      || 95790;
+  const valEle   = parseFloat(document.getElementById('fin-val-ele').value)      || 149800;
+  const entrada  = parseFloat(document.getElementById('fin-entrada').value)      || 20;
+  const prazo    = parseFloat(document.getElementById('fin-prazo').value)        || 60;
+  const juros    = parseFloat(document.getElementById('fin-juros').value)        || 1.5;
+  const km       = parseFloat(document.getElementById('fin-km').value)           || 1500;
+  const consGas  = parseFloat(document.getElementById('fin-consumo-gas').value)  || 12;
+  const precoGas = parseFloat(document.getElementById('fin-preco-gas').value)    || 6.20;
+  const eficEle  = parseFloat(document.getElementById('fin-efic').value)         || 6.8;
+  const kwh      = parseFloat(document.getElementById('fin-kwh').value)          || 0.85;
+  const manutPct = parseFloat(document.getElementById('fin-manut').value)        || 40;
+
+  const manutBase = 300;
+  const parcGas   = calcParcela(valGas, entrada, prazo, juros);
+  const parcEle   = calcParcela(valEle, entrada, prazo, juros);
+  const combGas   = (km/consGas)*precoGas;
+  const combEle   = (km/eficEle)*kwh;
+  const manutGas  = manutBase;
+  const manutEle  = manutBase*(1-manutPct/100);
+  const totalGas  = parcGas+combGas+manutGas;
+  const totalEle  = parcEle+combEle+manutEle;
+  const diff      = totalGas-totalEle;
+
+  document.getElementById('fin-r-parc-gas').textContent  = fmt(parcGas);
+  document.getElementById('fin-r-comb-gas').textContent  = fmt(combGas);
+  document.getElementById('fin-r-manut-gas').textContent = fmt(manutGas);
+  document.getElementById('fin-r-total-gas').textContent = fmt(totalGas);
+  document.getElementById('fin-r-parc-ele').textContent  = fmt(parcEle);
+  document.getElementById('fin-r-comb-ele').textContent  = fmt(combEle);
+  document.getElementById('fin-r-manut-ele').textContent = fmt(manutEle);
+  document.getElementById('fin-r-total-ele').textContent = fmt(totalEle);
+
+  const wb = document.getElementById('fin-winner-box');
+  const wv = document.getElementById('fin-winner-val');
+  const wl = document.getElementById('fin-winner-label');
+  if (diff>0) {
+    wb.className='fin-winner';
+    wv.textContent=fmt(diff)+'/mês mais barato';
+    wl.textContent='⚡ O elétrico sai mais em conta todo mês, já contando a parcela do financiamento.';
+  } else if (diff<0) {
+    wb.className='fin-winner bad';
+    wv.textContent=fmt(Math.abs(diff))+'/mês mais caro';
+    wl.textContent='🚗 O elétrico ainda sai mais caro por mês. Considere um modelo mais acessível ou uma entrada maior.';
+  } else {
+    wb.className='fin-winner';
+    wv.textContent='Empate!';
+    wl.textContent='O custo mensal total é praticamente igual.';
+  }
   document.getElementById('fin-resultado').style.display='block';
 }
-function calcular(){
-  const consumo      =parseFloat(document.getElementById('consumo').value)||12;
-  const precoGas     =parseFloat(document.getElementById('preco_gas').value)||6.20;
-  const kmMes        =parseFloat(document.getElementById('km_mes').value)||1500;
-  const valorAtual   =parseFloat(document.getElementById('valor_atual').value)||60000;
-  const efic         =parseFloat(document.getElementById('efic').value)||6;
-  const precoKwh     =parseFloat(document.getElementById('preco_kwh').value)||0.85;
-  const valorEletrico=parseFloat(document.getElementById('valor_eletrico').value)||180000;
-  const econManut    =parseFloat(document.getElementById('economia_manut').value)||40;
-  const gastoGas=(kmMes/consumo)*precoGas;
-  const gastoEle=(kmMes/efic)*precoKwh;
-  const manutGas=300;
-  const manutEle=manutGas*(1-econManut/100);
-  const totalGas=gastoGas+manutGas;
-  const totalEle=gastoEle+manutEle;
-  const ecoMes=totalGas-totalEle;
-  const difValor=valorEletrico-valorAtual;
-  const payback=difValor>0&&ecoMes>0?difValor/(ecoMes*12):(ecoMes<=0?999:0);
-  document.getElementById('r-gas').textContent=fmt(totalGas);
-  document.getElementById('r-ele').textContent=fmt(totalEle);
-  document.getElementById('r-eco').textContent=ecoMes>0?fmt(ecoMes):'R$ 0';
-  document.getElementById('r-pay').textContent=difValor<=0?'Já vale!':ecoMes<=0?'—':payback>0?payback.toFixed(1)+' anos':'—';
-  const max=Math.max(totalGas,totalEle);
-  document.getElementById('bar-gas').style.width=Math.round((totalGas/max)*100)+'%';
-  document.getElementById('bar-ele').style.width=Math.round((totalEle/max)*100)+'%';
-  document.getElementById('bar-gas-val').textContent=fmt(totalGas)+'/mês';
-  document.getElementById('bar-ele-val').textContent=fmt(totalEle)+'/mês';
-  const idxEle=document.getElementById('select-modelo').value;
-  const nomeModelo=idxEle!==''?eletricos[parseInt(idxEle)].nome:'o elétrico';
-  const vBox=document.getElementById('verdict-box');
-  const vPill=document.getElementById('verdict-pill');
-  const vTitle=document.getElementById('verdict-title');
-  const vText=document.getElementById('verdict-text');
-  vBox.className='verdict';
-  if(ecoMes<=0){vBox.classList.add('danger');vPill.textContent='⚠ Não compensa agora';vTitle.textContent=nomeModelo+' não compensa agora';vText.textContent='Com seu perfil de uso, esse elétrico custaria mais caro no dia a dia. Considere rodar mais km por mês ou buscar um modelo mais acessível.';}
-  else if(difValor<=0){vBox.classList.add('now');vPill.textContent='⚡ Já vale agora';vTitle.textContent=nomeModelo+' já é mais barato!';vText.textContent='O elétrico custa menos que o carro comparado e ainda economiza '+fmt(ecoMes)+'/mês no dia a dia. Trocar agora faz sentido financeiro imediato.';}
-  else if(difValor<=30000){vBox.classList.add('now');vPill.textContent='⚡ Já vale agora';vTitle.textContent=nomeModelo+' já vale a pena!';vText.textContent='A diferença de preço é de apenas '+fmt(difValor)+' e você economiza '+fmt(ecoMes)+'/mês. O retorno vem em '+payback.toFixed(1)+' anos — uma troca que se paga rápido.';}
-  else if(payback<=3){vBox.classList.add('fast');vPill.textContent='✓ Retorno rápido';vTitle.textContent=nomeModelo+' vale a pena!';vText.textContent='Você economizaria '+fmt(ecoMes)+'/mês e recuperaria o investimento em apenas '+payback.toFixed(1)+' anos. Um retorno excelente.';}
-  else if(payback<=7){vBox.classList.add('medium');vPill.textContent='~ Vale a médio prazo';vTitle.textContent='Vale, com planejamento';vText.textContent='Você economizaria '+fmt(ecoMes)+'/mês com o '+nomeModelo+', recuperando o investimento em '+payback.toFixed(1)+' anos. Faz sentido se você planeja ficar com o carro por bastante tempo.';}
-  else{vBox.classList.add('warning');vPill.textContent='⏳ Retorno longo';vTitle.textContent='Vale, mas o retorno é demorado';vText.textContent='Você economizaria '+fmt(ecoMes)+'/mês, mas levaria '+payback.toFixed(1)+' anos para recuperar o investimento no '+nomeModelo+'. Considere um modelo mais acessível para um retorno mais rápido.';}
-  document.getElementById('resultados').style.display='block';
-}
-function renderAbastView(){
-  const el=document.getElementById('view-abast');
-  if(!currentUser){el.innerHTML=`<div class="premium-lock"><h3>Faça login para continuar</h3><p>Entre na sua conta para registrar seus abastecimentos.</p><button class="btn" style="max-width:200px;margin:0 auto;" onclick="openModal('login')">Entrar →</button></div>`;return;}
-  if(!isPremium){el.innerHTML=premiumLockHTML('histórico de abastecimentos');return;}
-  el.innerHTML=`<p class="section-title">Registrar abastecimento</p>
+
+// ── Abastecimentos ──
+function renderAbastView() {
+  const el = document.getElementById('view-abast');
+  if (!currentUser) {
+    el.innerHTML=`<div class="premium-lock"><h3>Faça login para continuar</h3><p>Entre na sua conta para registrar seus abastecimentos.</p><button class="btn" style="max-width:200px;margin:0 auto;" onclick="openModal('login')">Entrar →</button></div>`;
+    return;
+  }
+  if (!isPremium) { el.innerHTML=premiumLockHTML('histórico de abastecimentos'); return; }
+  el.innerHTML=`
+    <p class="section-title">Registrar abastecimento</p>
     <div class="card">
       <div class="grid-2" style="margin-bottom:12px;">
         <div class="field"><label>Litros abastecidos</label><input type="number" id="ab-litros" placeholder="Ex: 40" min="1" step="0.5" /></div>
@@ -751,11 +962,11 @@ function renderAbastView(){
   document.getElementById('ab-data').valueAsDate=new Date();
   loadAbast();
 }
-async function loadAbast(){
+async function loadAbast() {
   const{data}=await sb.from('abastecimentos').select('*').eq('user_id',currentUser.id).order('data',{ascending:false});
   abastecimentos=data||[];renderAbastList();
 }
-async function addAbast(){
+async function addAbast() {
   const litros=parseFloat(document.getElementById('ab-litros').value);
   const valor=parseFloat(document.getElementById('ab-valor').value);
   const km=parseFloat(document.getElementById('ab-km').value);
@@ -767,7 +978,7 @@ async function addAbast(){
   document.getElementById('ab-km').value='';
   loadAbast();
 }
-function renderAbastList(){
+function renderAbastList() {
   const list=document.getElementById('abast-list');
   if(!list)return;
   if(abastecimentos.length===0){list.innerHTML='<p style="font-size:14px;color:#aaa;">Nenhum abastecimento registrado ainda.</p>';document.getElementById('abast-resumo').style.display='none';return;}
@@ -777,15 +988,17 @@ function renderAbastList(){
   document.getElementById('ab-media').textContent='R$ '+(tv/tl).toFixed(2)+'/litro';
   document.getElementById('abast-resumo').style.display='block';
 }
-function renderProjecaoView(){
+
+// ── Projeção anual ──
+function renderProjecaoView() {
   const el=document.getElementById('view-projecao');
   if(!currentUser){el.innerHTML=`<div class="premium-lock"><h3>Faça login para continuar</h3><p>Entre na sua conta para ver sua projeção anual.</p><button class="btn" style="max-width:200px;margin:0 auto;" onclick="openModal('login')">Entrar →</button></div>`;return;}
   if(!isPremium){el.innerHTML=premiumLockHTML('projeção de economia anual');return;}
-  const kmMes=parseFloat(document.getElementById('km_mes')?.value)||1500;
-  const consumo=parseFloat(document.getElementById('consumo')?.value)||12;
-  const precoGas=parseFloat(document.getElementById('preco_gas')?.value)||6.20;
-  const efic=parseFloat(document.getElementById('efic')?.value)||6;
-  const precoKwh=parseFloat(document.getElementById('preco_kwh')?.value)||0.85;
+  const kmMes    =parseFloat(document.getElementById('km_mes')?.value)||1500;
+  const consumo  =parseFloat(document.getElementById('consumo')?.value)||12;
+  const precoGas =parseFloat(document.getElementById('preco_gas')?.value)||6.20;
+  const efic     =parseFloat(document.getElementById('efic')?.value)||6;
+  const precoKwh =parseFloat(document.getElementById('preco_kwh')?.value)||0.85;
   const econManut=parseFloat(document.getElementById('economia_manut')?.value)||40;
   const gastoGas=(kmMes/consumo)*precoGas+300;
   const gastoEle=(kmMes/efic)*precoKwh+300*(1-econManut/100);
@@ -799,11 +1012,13 @@ function renderProjecaoView(){
     </div>
     <p style="font-size:12px;color:#bbb;margin-top:8px;">* Projeção considera preços constantes. Valores reais de gasolina, energia e manutenção podem variar ao longo do tempo.</p>`;
 }
-function renderModelos(){
-  const kmMes=parseFloat(document.getElementById('m-km').value)||1500;
+
+// ── Modelos do mercado ──
+function renderModelos() {
+  const kmMes   =parseFloat(document.getElementById('m-km').value)||1500;
   const precoKwh=parseFloat(document.getElementById('m-kwh').value)||0.85;
   const gasAtual=parseFloat(document.getElementById('m-gasatual').value)||780;
-  const faixa=parseFloat(document.getElementById('m-faixa').value)||0;
+  const faixa   =parseFloat(document.getElementById('m-faixa').value)||0;
   const manutGas=300;
   let lista=eletricos.map(e=>{
     const gastoEle=(kmMes/e.efic)*precoKwh;
@@ -842,6 +1057,7 @@ function renderModelos(){
   });
   document.getElementById('modelos-lista').innerHTML=html;
 }
+
 renderModelos();
 updateHeader();
 </script>
