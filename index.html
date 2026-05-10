@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Elétrico Vale? — Calculadora Gasolina vs Elétrico</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: #f5f5f3; color: #1a1a1a; min-height: 100vh; }
+
+    header { background: #fff; border-bottom: 1px solid #e5e5e5; padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between; }
+    .logo { font-size: 18px; font-weight: 600; color: #1a1a1a; }
+    .logo span { color: #16a34a; }
+    .badge-header { font-size: 11px; background: #dcfce7; color: #15803d; padding: 3px 10px; border-radius: 20px; font-weight: 500; }
+
+    .container { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+    .hero { text-align: center; margin-bottom: 2rem; }
+    .hero h1 { font-size: 28px; font-weight: 600; margin-bottom: 8px; }
+    .hero p { font-size: 15px; color: #666; }
+
+    .tab-row { display: flex; gap: 8px; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .tab { padding: 8px 18px; font-size: 13px; border-radius: 8px; border: 1px solid #e5e5e5; cursor: pointer; background: #fff; color: #666; font-family: 'Inter', sans-serif; font-weight: 500; transition: all 0.15s; }
+    .tab.active { border-color: #1a1a1a; color: #1a1a1a; background: #fff; }
+    .tab:hover { border-color: #999; }
+
+    .card { background: #fff; border: 1px solid #e5e5e5; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
+    .section-title { font-size: 12px; font-weight: 500; color: #999; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label { font-size: 13px; color: #555; }
+    .field input, .field select { width: 100%; padding: 9px 12px; border: 1px solid #e5e5e5; border-radius: 8px; font-size: 14px; font-family: 'Inter', sans-serif; background: #fff; color: #1a1a1a; outline: none; transition: border-color 0.15s; }
+    .field input:focus, .field select:focus { border-color: #999; }
+
+    .modelo-info-box { background: #f9f9f8; border-radius: 8px; padding: 10px 14px; margin-top: 10px; display: none; }
+    .modelo-info-row { display: flex; justify-content: space-between; font-size: 13px; padding: 3px 0; }
+    .modelo-info-row span:first-child { color: #888; }
+    .modelo-info-row span:last-child { font-weight: 500; }
+
+    .btn { width: 100%; padding: 11px; font-size: 15px; font-weight: 500; cursor: pointer; border-radius: 8px; background: #1a1a1a; border: none; color: #fff; font-family: 'Inter', sans-serif; margin-top: 8px; transition: background 0.15s; }
+    .btn:hover { background: #333; }
+
+    .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+    .metric { background: #f9f9f8; border-radius: 8px; padding: 1rem; }
+    .metric-label { font-size: 12px; color: #888; margin-bottom: 4px; }
+    .metric-value { font-size: 22px; font-weight: 600; color: #1a1a1a; }
+    .metric-sub { font-size: 11px; color: #bbb; margin-top: 2px; }
+
+    .bar-wrap { margin: 1rem 0; }
+    .bar-label { display: flex; justify-content: space-between; font-size: 13px; color: #666; margin-bottom: 6px; }
+    .bar-track { height: 8px; background: #f0f0f0; border-radius: 4px; overflow: hidden; margin-bottom: 10px; }
+    .bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+
+    .verdict { border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; border: 1px solid transparent; }
+    .verdict-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+    .verdict-text { font-size: 14px; line-height: 1.6; }
+    .verdict.success { background: #f0fdf4; border-color: #bbf7d0; }
+    .verdict.success .verdict-title, .verdict.success .verdict-text { color: #15803d; }
+    .verdict.warning { background: #fffbeb; border-color: #fde68a; }
+    .verdict.warning .verdict-title, .verdict.warning .verdict-text { color: #92400e; }
+    .verdict.danger { background: #fef2f2; border-color: #fecaca; }
+    .verdict.danger .verdict-title, .verdict.danger .verdict-text { color: #b91c1c; }
+
+    .modelo-card { background: #fff; border: 1px solid #e5e5e5; border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 10px; }
+    .modelo-card.destaque { border: 2px solid #16a34a; }
+    .modelo-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+    .modelo-nome { font-size: 15px; font-weight: 600; color: #1a1a1a; margin-bottom: 2px; }
+    .modelo-preco { font-size: 13px; color: #888; }
+    .modelo-badge { font-size: 11px; padding: 3px 10px; border-radius: 20px; white-space: nowrap; font-weight: 500; }
+    .badge-green { background: #dcfce7; color: #15803d; }
+    .badge-yellow { background: #fef9c3; color: #854d0e; }
+    .badge-red { background: #fee2e2; color: #b91c1c; }
+    .melhor-tag { font-size: 11px; padding: 2px 8px; border-radius: 20px; background: #dcfce7; color: #15803d; margin-left: 8px; font-weight: 500; }
+    .modelo-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .mstat { background: #f9f9f8; border-radius: 8px; padding: 8px; text-align: center; }
+    .mstat-val { font-size: 14px; font-weight: 600; color: #1a1a1a; }
+    .mstat-label { font-size: 11px; color: #aaa; margin-top: 2px; }
+
+    .abast-item { display: flex; justify-content: space-between; align-items: center; font-size: 13px; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+    .abast-item:last-child { border-bottom: none; }
+    .tag { font-size: 11px; padding: 2px 8px; border-radius: 20px; background: #e0f2fe; color: #0369a1; font-weight: 500; }
+
+    .resumo-metric { background: #f9f9f8; border-radius: 8px; padding: 1rem; margin-top: 12px; }
+
+    footer { text-align: center; padding: 2rem; font-size: 13px; color: #bbb; }
+
+    @media (max-width: 480px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      .result-grid { grid-template-columns: 1fr; }
+      .modelo-stats { grid-template-columns: repeat(3, 1fr); }
+      .hero h1 { font-size: 22px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Elétrico<span>Vale?</span></div>
+  <span class="badge-header">100% gratuito</span>
+</header>
+
+<div class="container">
+  <div class="hero">
+    <h1>Vale a pena trocar para elétrico?</h1>
+    <p>Compare seu gasto atual com os principais elétricos do mercado e descubra.</p>
+  </div>
+
+  <div class="tab-row">
+    <button class="tab active" onclick="showTab('calc')" id="tab-calc">Calculadora</button>
+    <button class="tab" onclick="showTab('modelos')" id="tab-modelos">Modelos do mercado</button>
+    <button class="tab" onclick="showTab('abast')" id="tab-abast">Abastecimentos</button>
+  </div>
+
+  <!-- CALCULADORA -->
+  <div id="view-calc">
+    <p class="section-title">Seu carro atual (gasolina)</p>
+    <div class="card">
+      <div class="grid-2">
+        <div class="field"><label>Consumo médio (km/l)</label><input type="number" id="consumo" value="12" min="1" step="0.1" /></div>
+        <div class="field"><label>Preço da gasolina (R$/l)</label><input type="number" id="preco_gas" value="6.20" min="1" step="0.01" /></div>
+        <div class="field"><label>Km rodados por mês</label><input type="number" id="km_mes" value="1500" min="100" step="50" /></div>
+        <div class="field"><label>Valor do seu carro (R$)</label><input type="number" id="valor_atual" value="60000" min="0" step="1000" /></div>
+      </div>
+    </div>
+
+    <p class="section-title">Carro elétrico comparado</p>
+    <div class="card">
+      <div class="field" style="margin-bottom:12px;">
+        <label>Escolher modelo do mercado (opcional)</label>
+        <select id="select-modelo" onchange="preencherModelo()">
+          <option value="">— Inserir dados manualmente —</option>
+          <option value="0">BYD Seagull — R$ 115.900</option>
+          <option value="1">BYD Dolphin — R$ 149.800</option>
+          <option value="2">GWM ORA 03 — R$ 169.990</option>
+          <option value="3">BYD Seal — R$ 239.800</option>
+          <option value="4">Chevrolet Equinox EV — R$ 249.990</option>
+          <option value="5">Fiat 500e — R$ 249.990</option>
+          <option value="6">Volvo EX30 — R$ 299.990</option>
+          <option value="7">BMW iX1 — R$ 399.990</option>
+          <option value="8">Volvo EX40 — R$ 389.990</option>
+          <option value="9">BYD Han — R$ 349.800</option>
+          <option value="10">BYD Tan — R$ 399.800</option>
+          <option value="11">Porsche Taycan — R$ 749.990</option>
+        </select>
+      </div>
+      <div id="modelo-info-box" class="modelo-info-box">
+        <div class="modelo-info-row"><span>Segmento</span><span id="info-seg">-</span></div>
+        <div class="modelo-info-row"><span>Autonomia</span><span id="info-auto">-</span></div>
+        <div class="modelo-info-row"><span>Eficiência</span><span id="info-efic">-</span></div>
+        <div class="modelo-info-row"><span>Economia em manutenção</span><span id="info-manut">-</span></div>
+      </div>
+      <div class="grid-2" style="margin-top:12px;">
+        <div class="field"><label>Eficiência (km/kWh)</label><input type="number" id="efic" value="6" min="1" step="0.1" /></div>
+        <div class="field"><label>Preço energia (R$/kWh)</label><input type="number" id="preco_kwh" value="0.85" min="0.1" step="0.01" /></div>
+        <div class="field"><label>Valor do elétrico (R$)</label><input type="number" id="valor_eletrico" value="180000" min="0" step="1000" /></div>
+        <div class="field"><label>Economia em manutenção (%)</label><input type="number" id="economia_manut" value="40" min="0" max="100" step="5" /></div>
+      </div>
+    </div>
+    <button class="btn" onclick="calcular()">Calcular comparativo →</button>
+
+    <div id="resultados" style="margin-top:1.5rem; display:none;">
+      <p class="section-title">Resultado mensal</p>
+      <div class="result-grid">
+        <div class="metric"><div class="metric-label">Gasto gasolina/mês</div><div class="metric-value" id="r-gas">-</div><div class="metric-sub">combustível + manutenção</div></div>
+        <div class="metric"><div class="metric-label">Gasto elétrico/mês</div><div class="metric-value" id="r-ele">-</div><div class="metric-sub">energia + manutenção</div></div>
+        <div class="metric"><div class="metric-label">Economia mensal</div><div class="metric-value" id="r-eco">-</div><div class="metric-sub">com elétrico</div></div>
+        <div class="metric"><div class="metric-label">Payback</div><div class="metric-value" id="r-pay">-</div><div class="metric-sub">anos para compensar</div></div>
+      </div>
+      <div class="bar-wrap">
+        <div class="bar-label"><span>Gasolina</span><span id="bar-gas-val"></span></div>
+        <div class="bar-track"><div class="bar-fill" id="bar-gas" style="background:#ef4444;"></div></div>
+        <div class="bar-label"><span id="bar-ele-label">Elétrico</span><span id="bar-ele-val"></span></div>
+        <div class="bar-track"><div class="bar-fill" id="bar-ele" style="background:#16a34a;"></div></div>
+      </div>
+      <div class="verdict" id="verdict-box">
+        <div class="verdict-title" id="verdict-title">-</div>
+        <div class="verdict-text" id="verdict-text">-</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODELOS DO MERCADO -->
+  <div id="view-modelos" style="display:none;">
+    <p class="section-title">Seu perfil de uso</p>
+    <div class="card">
+      <div class="grid-2">
+        <div class="field"><label>Km rodados por mês</label><input type="number" id="m-km" value="1500" min="100" step="50" /></div>
+        <div class="field"><label>Preço energia (R$/kWh)</label><input type="number" id="m-kwh" value="0.85" min="0.1" step="0.01" /></div>
+        <div class="field"><label>Gasto atual gasolina/mês (R$)</label><input type="number" id="m-gasatual" value="780" min="0" step="10" /></div>
+        <div class="field"><label>Filtrar por faixa de preço</label>
+          <select id="m-faixa">
+            <option value="0">Todos os modelos</option>
+            <option value="150000">Até R$ 150 mil</option>
+            <option value="200000">Até R$ 200 mil</option>
+            <option value="300000">Até R$ 300 mil</option>
+            <option value="999999">Acima de R$ 300 mil</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn" onclick="renderModelos()" style="margin-top:12px;">Comparar modelos →</button>
+    </div>
+    <div id="modelos-lista"></div>
+  </div>
+
+  <!-- ABASTECIMENTOS -->
+  <div id="view-abast" style="display:none;">
+    <p class="section-title">Registrar abastecimento</p>
+    <div class="card">
+      <div class="grid-2" style="margin-bottom:12px;">
+        <div class="field"><label>Litros abastecidos</label><input type="number" id="ab-litros" placeholder="Ex: 40" min="1" step="0.5" /></div>
+        <div class="field"><label>Valor pago (R$)</label><input type="number" id="ab-valor" placeholder="Ex: 248" min="1" step="0.01" /></div>
+        <div class="field"><label>Km no momento</label><input type="number" id="ab-km" placeholder="Ex: 52340" min="0" step="1" /></div>
+        <div class="field"><label>Data</label><input type="date" id="ab-data" /></div>
+      </div>
+      <button class="btn" onclick="addAbast()">Registrar abastecimento</button>
+    </div>
+    <p class="section-title">Histórico</p>
+    <div class="card" id="abast-list"><p style="font-size:14px;color:#aaa;">Nenhum abastecimento registrado ainda.</p></div>
+    <div class="resumo-metric" id="abast-resumo" style="display:none;">
+      <div class="metric-label">Média do preço por litro</div>
+      <div class="metric-value" id="ab-media">-</div>
+    </div>
+  </div>
+</div>
+
+<footer>Elétrico Vale? · Feito para ajudar brasileiros a tomar melhores decisões</footer>
+
+<script>
+const eletricos = [
+  { nome:"BYD Seagull", preco:115900, efic:7.2, autonomia:300, manut:40, segmento:"Compacto" },
+  { nome:"BYD Dolphin", preco:149800, efic:6.8, autonomia:400, manut:40, segmento:"Compacto" },
+  { nome:"GWM ORA 03", preco:169990, efic:6.5, autonomia:420, manut:40, segmento:"Compacto" },
+  { nome:"BYD Seal", preco:239800, efic:6.2, autonomia:510, manut:40, segmento:"Sedan" },
+  { nome:"Chevrolet Equinox EV", preco:249990, efic:6.5, autonomia:480, manut:38, segmento:"SUV" },
+  { nome:"Fiat 500e", preco:249990, efic:7.0, autonomia:320, manut:38, segmento:"Compacto" },
+  { nome:"Volvo EX30", preco:299990, efic:6.3, autonomia:480, manut:35, segmento:"SUV compacto" },
+  { nome:"BMW iX1", preco:399990, efic:6.1, autonomia:413, manut:33, segmento:"SUV premium" },
+  { nome:"Volvo EX40", preco:389990, efic:5.9, autonomia:418, manut:35, segmento:"SUV" },
+  { nome:"BYD Han", preco:349800, efic:5.8, autonomia:521, manut:40, segmento:"Sedan premium" },
+  { nome:"BYD Tan", preco:399800, efic:4.9, autonomia:480, manut:40, segmento:"SUV" },
+  { nome:"Porsche Taycan", preco:749990, efic:5.2, autonomia:464, manut:30, segmento:"Esportivo" },
+];
+
+let abastecimentos = [];
+
+function showTab(t) {
+  ['calc','modelos','abast'].forEach(v => {
+    document.getElementById('view-'+v).style.display = v===t ? 'block' : 'none';
+    document.getElementById('tab-'+v).className = 'tab'+(v===t?' active':'');
+  });
+}
+
+function preencherModelo() {
+  const idx = document.getElementById('select-modelo').value;
+  const box = document.getElementById('modelo-info-box');
+  if (idx==='') { box.style.display='none'; return; }
+  const e = eletricos[parseInt(idx)];
+  document.getElementById('efic').value = e.efic;
+  document.getElementById('valor_eletrico').value = e.preco;
+  document.getElementById('economia_manut').value = e.manut;
+  document.getElementById('info-seg').textContent = e.segmento;
+  document.getElementById('info-auto').textContent = e.autonomia+' km';
+  document.getElementById('info-efic').textContent = e.efic+' km/kWh';
+  document.getElementById('info-manut').textContent = e.manut+'%';
+  box.style.display = 'block';
+  document.getElementById('bar-ele-label').textContent = e.nome;
+}
+
+function calcular() {
+  const consumo = parseFloat(document.getElementById('consumo').value)||12;
+  const precoGas = parseFloat(document.getElementById('preco_gas').value)||6.20;
+  const kmMes = parseFloat(document.getElementById('km_mes').value)||1500;
+  const valorAtual = parseFloat(document.getElementById('valor_atual').value)||60000;
+  const efic = parseFloat(document.getElementById('efic').value)||6;
+  const precoKwh = parseFloat(document.getElementById('preco_kwh').value)||0.85;
+  const valorEletrico = parseFloat(document.getElementById('valor_eletrico').value)||180000;
+  const econManut = parseFloat(document.getElementById('economia_manut').value)||40;
+
+  const gastoGas = (kmMes/consumo)*precoGas;
+  const gastoEle = (kmMes/efic)*precoKwh;
+  const manutGas = 300;
+  const manutEle = manutGas*(1-econManut/100);
+  const totalGas = gastoGas+manutGas;
+  const totalEle = gastoEle+manutEle;
+  const ecoMes = totalGas-totalEle;
+  const difValor = valorEletrico-valorAtual;
+  const payback = difValor>0&&ecoMes>0 ? difValor/(ecoMes*12) : 0;
+
+  document.getElementById('r-gas').textContent = 'R$ '+Math.round(totalGas).toLocaleString('pt-BR');
+  document.getElementById('r-ele').textContent = 'R$ '+Math.round(totalEle).toLocaleString('pt-BR');
+  document.getElementById('r-eco').textContent = ecoMes>0 ? 'R$ '+Math.round(ecoMes).toLocaleString('pt-BR') : 'R$ 0';
+  document.getElementById('r-pay').textContent = difValor<=0 ? 'Já vale!' : payback>0 ? payback.toFixed(1)+' anos' : '-';
+
+  const max = Math.max(totalGas,totalEle);
+  document.getElementById('bar-gas').style.width = Math.round((totalGas/max)*100)+'%';
+  document.getElementById('bar-ele').style.width = Math.round((totalEle/max)*100)+'%';
+  document.getElementById('bar-gas-val').textContent = 'R$ '+Math.round(totalGas).toLocaleString('pt-BR')+'/mês';
+  document.getElementById('bar-ele-val').textContent = 'R$ '+Math.round(totalEle).toLocaleString('pt-BR')+'/mês';
+
+  const idx = document.getElementById('select-modelo').value;
+  const nomeModelo = idx!=='' ? eletricos[parseInt(idx)].nome : 'o elétrico';
+  const vBox = document.getElementById('verdict-box');
+  const vTitle = document.getElementById('verdict-title');
+  const vText = document.getElementById('verdict-text');
+
+  vBox.className = 'verdict';
+  if (ecoMes<=0) {
+    vBox.classList.add('danger');
+    vTitle.textContent = nomeModelo+' não compensa agora';
+    vText.textContent = 'Com seu perfil de uso, esse elétrico custaria mais caro no dia a dia. Considere rodar mais km ou buscar um modelo mais acessível.';
+  } else if (payback>10) {
+    vBox.classList.add('warning');
+    vTitle.textContent = 'Vale, mas o retorno é longo';
+    vText.textContent = 'Você economizaria R$ '+Math.round(ecoMes).toLocaleString('pt-BR')+'/mês com o '+nomeModelo+', mas levaria '+payback.toFixed(1)+' anos para recuperar o investimento.';
+  } else {
+    vBox.classList.add('success');
+    vTitle.textContent = nomeModelo+' vale a pena!';
+    vText.textContent = 'Você economizaria R$ '+Math.round(ecoMes).toLocaleString('pt-BR')+'/mês e recuperaria o investimento em '+payback.toFixed(1)+' anos.';
+  }
+  document.getElementById('resultados').style.display = 'block';
+}
+
+function renderModelos() {
+  const kmMes = parseFloat(document.getElementById('m-km').value)||1500;
+  const precoKwh = parseFloat(document.getElementById('m-kwh').value)||0.85;
+  const gasAtual = parseFloat(document.getElementById('m-gasatual').value)||780;
+  const faixa = parseFloat(document.getElementById('m-faixa').value)||0;
+  const manutGas = 300;
+
+  let lista = eletricos.map(e => {
+    const gastoEle = (kmMes/e.efic)*precoKwh;
+    const manutEle = manutGas*(1-e.manut/100);
+    const totalEle = gastoEle+manutEle;
+    const totalGas = gasAtual+manutGas;
+    const ecoMes = totalGas-totalEle;
+    const payback = ecoMes>0 ? e.preco/(ecoMes*12) : 999;
+    return {...e, gastoEle:Math.round(totalEle), ecoMes:Math.round(ecoMes), payback};
+  });
+
+  if (faixa>0&&faixa<999999) lista = lista.filter(e=>e.preco<=faixa);
+  if (faixa===999999) lista = lista.filter(e=>e.preco>300000);
+  lista.sort((a,b)=>a.payback-b.payback);
+
+  if (lista.length===0) {
+    document.getElementById('modelos-lista').innerHTML='<div class="card"><p style="font-size:14px;color:#aaa;">Nenhum modelo encontrado para esse filtro.</p></div>';
+    return;
+  }
+
+  let html='';
+  lista.forEach((e,i)=>{
+    const isMelhor = i===0&&e.ecoMes>0;
+    let badgeClass='badge-green', badgeText='';
+    if (e.ecoMes<=0) { badgeClass='badge-red'; badgeText='Não compensa'; }
+    else if (e.payback>10) { badgeClass='badge-yellow'; badgeText='Retorno longo'; }
+    else { badgeClass='badge-green'; badgeText=e.payback.toFixed(1)+' anos p/ pagar'; }
+
+    html+=`<div class="modelo-card ${isMelhor?'destaque':''}">
+      <div class="modelo-header">
+        <div>
+          <div class="modelo-nome">${e.nome}${isMelhor?' <span class="melhor-tag">Melhor opção</span>':''}</div>
+          <div class="modelo-preco">R$ ${e.preco.toLocaleString('pt-BR')} · ${e.segmento} · ${e.autonomia} km autonomia</div>
+        </div>
+        <span class="modelo-badge ${badgeClass}">${badgeText}</span>
+      </div>
+      <div class="modelo-stats">
+        <div class="mstat"><div class="mstat-val">R$ ${e.gastoEle.toLocaleString('pt-BR')}</div><div class="mstat-label">custo/mês</div></div>
+        <div class="mstat"><div class="mstat-val" style="color:${e.ecoMes>0?'#16a34a':'#dc2626'}">${e.ecoMes>0?'+':''}R$ ${Math.abs(e.ecoMes).toLocaleString('pt-BR')}</div><div class="mstat-label">${e.ecoMes>0?'economia/mês':'mais caro/mês'}</div></div>
+        <div class="mstat"><div class="mstat-val">${e.efic.toFixed(1)} km/kWh</div><div class="mstat-label">eficiência</div></div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('modelos-lista').innerHTML=html;
+}
+
+function addAbast() {
+  const litros = parseFloat(document.getElementById('ab-litros').value);
+  const valor = parseFloat(document.getElementById('ab-valor').value);
+  const km = parseFloat(document.getElementById('ab-km').value);
+  const data = document.getElementById('ab-data').value;
+  if (!litros||!valor) { alert('Preencha litros e valor.'); return; }
+  abastecimentos.push({litros,valor,km,data});
+  renderAbast();
+  document.getElementById('ab-litros').value='';
+  document.getElementById('ab-valor').value='';
+  document.getElementById('ab-km').value='';
+}
+
+function renderAbast() {
+  const list = document.getElementById('abast-list');
+  if (abastecimentos.length===0) {
+    list.innerHTML='<p style="font-size:14px;color:#aaa;">Nenhum abastecimento registrado ainda.</p>';
+    document.getElementById('abast-resumo').style.display='none';
+    return;
+  }
+  let tl=0,tv=0,html='';
+  abastecimentos.forEach(a=>{
+    tl+=a.litros; tv+=a.valor;
+    const ppl=(a.valor/a.litros).toFixed(2);
+    html+=`<div class="abast-item"><span>${a.data||'Sem data'} — ${a.litros}L</span><span><span class="tag">R$ ${ppl}/l</span>&nbsp; R$ ${a.valor.toFixed(2)}</span></div>`;
+  });
+  list.innerHTML=html;
+  document.getElementById('ab-media').textContent='R$ '+(tv/tl).toFixed(2)+'/litro';
+  document.getElementById('abast-resumo').style.display='block';
+  const pi=document.getElementById('preco_gas');
+  if(pi) pi.value=(tv/tl).toFixed(2);
+}
+
+document.getElementById('ab-data').valueAsDate=new Date();
+renderModelos();
+</script>
+</body>
+</html>
