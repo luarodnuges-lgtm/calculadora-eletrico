@@ -68,12 +68,48 @@
     .verdict { border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; border: 1px solid transparent; }
     .verdict-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
     .verdict-text { font-size: 14px; line-height: 1.6; }
-    .verdict.success { background: #f0fdf4; border-color: #bbf7d0; }
-    .verdict.success .verdict-title, .verdict.success .verdict-text { color: #15803d; }
+
+    /* Nível 1 — Já vale agora (verde forte) */
+    .verdict.now { background: #f0fdf4; border-color: #86efac; }
+    .verdict.now .verdict-title { color: #15803d; }
+    .verdict.now .verdict-text { color: #166534; }
+
+    /* Nível 2 — Retorno rápido ≤ 3 anos (verde) */
+    .verdict.fast { background: #f0fdf4; border-color: #bbf7d0; }
+    .verdict.fast .verdict-title { color: #16a34a; }
+    .verdict.fast .verdict-text { color: #15803d; }
+
+    /* Nível 3 — Vale a médio prazo 3-7 anos (verde claro) */
+    .verdict.medium { background: #f7fef9; border-color: #d1fae5; }
+    .verdict.medium .verdict-title { color: #059669; }
+    .verdict.medium .verdict-text { color: #065f46; }
+
+    /* Nível 4 — Retorno longo > 7 anos (amarelo) */
     .verdict.warning { background: #fffbeb; border-color: #fde68a; }
-    .verdict.warning .verdict-title, .verdict.warning .verdict-text { color: #92400e; }
+    .verdict.warning .verdict-title { color: #d97706; }
+    .verdict.warning .verdict-text { color: #92400e; }
+
+    /* Nível 5 — Não compensa (vermelho) */
     .verdict.danger { background: #fef2f2; border-color: #fecaca; }
-    .verdict.danger .verdict-title, .verdict.danger .verdict-text { color: #b91c1c; }
+    .verdict.danger .verdict-title { color: #b91c1c; }
+    .verdict.danger .verdict-text { color: #991b1b; }
+
+    /* Pill de nível no veredito */
+    .verdict-pill {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 10px;
+      border-radius: 20px;
+      margin-bottom: 8px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .verdict.now .verdict-pill { background: #bbf7d0; color: #14532d; }
+    .verdict.fast .verdict-pill { background: #dcfce7; color: #15803d; }
+    .verdict.medium .verdict-pill { background: #d1fae5; color: #065f46; }
+    .verdict.warning .verdict-pill { background: #fef3c7; color: #92400e; }
+    .verdict.danger .verdict-pill { background: #fee2e2; color: #b91c1c; }
 
     .modelo-card { background: #fff; border: 1px solid #e5e5e5; border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 10px; }
     .modelo-card.destaque { border: 2px solid #16a34a; }
@@ -246,6 +282,7 @@
         <div class="bar-track"><div class="bar-fill" id="bar-ele" style="background:#16a34a;"></div></div>
       </div>
       <div class="verdict" id="verdict-box">
+        <div class="verdict-pill" id="verdict-pill"></div>
         <div class="verdict-title" id="verdict-title">-</div>
         <div class="verdict-text" id="verdict-text">-</div>
       </div>
@@ -397,9 +434,6 @@ async function handlePayment() {
   const { paymentMethod, error } = await stripe.createPaymentMethod({ type:'card', card:cardElement });
   if (error) { errors.textContent = error.message; msg.innerHTML=''; return; }
 
-  // Em produção, aqui você chamaria um backend para criar a assinatura no Stripe
-  // e atualizar o is_premium no Supabase via webhook.
-  // Por ora, simulamos a ativação para demonstração:
   await sb.from('profiles').upsert({ id: currentUser.id, is_premium: true });
   isPremium = true;
   closeUpgrade();
@@ -549,56 +583,93 @@ function preencherModelo() {
 }
 
 function calcular() {
-  const consumo=parseFloat(document.getElementById('consumo').value)||12;
-  const precoGas=parseFloat(document.getElementById('preco_gas').value)||6.20;
-  const kmMes=parseFloat(document.getElementById('km_mes').value)||1500;
-  const valorAtual=parseFloat(document.getElementById('valor_atual').value)||60000;
-  const efic=parseFloat(document.getElementById('efic').value)||6;
-  const precoKwh=parseFloat(document.getElementById('preco_kwh').value)||0.85;
-  const valorEletrico=parseFloat(document.getElementById('valor_eletrico').value)||180000;
-  const econManut=parseFloat(document.getElementById('economia_manut').value)||40;
+  const consumo      = parseFloat(document.getElementById('consumo').value)        || 12;
+  const precoGas     = parseFloat(document.getElementById('preco_gas').value)      || 6.20;
+  const kmMes        = parseFloat(document.getElementById('km_mes').value)         || 1500;
+  const valorAtual   = parseFloat(document.getElementById('valor_atual').value)    || 60000;
+  const efic         = parseFloat(document.getElementById('efic').value)           || 6;
+  const precoKwh     = parseFloat(document.getElementById('preco_kwh').value)      || 0.85;
+  const valorEletrico= parseFloat(document.getElementById('valor_eletrico').value) || 180000;
+  const econManut    = parseFloat(document.getElementById('economia_manut').value) || 40;
 
-  const gastoGas=(kmMes/consumo)*precoGas;
-  const gastoEle=(kmMes/efic)*precoKwh;
-  const manutGas=300;
-  const manutEle=manutGas*(1-econManut/100);
-  const totalGas=gastoGas+manutGas;
-  const totalEle=gastoEle+manutEle;
-  const ecoMes=totalGas-totalEle;
-  const difValor=valorEletrico-valorAtual;
-  const payback=difValor>0&&ecoMes>0?difValor/(ecoMes*12):0;
+  const gastoGas  = (kmMes / consumo) * precoGas;
+  const gastoEle  = (kmMes / efic) * precoKwh;
+  const manutGas  = 300;
+  const manutEle  = manutGas * (1 - econManut / 100);
+  const totalGas  = gastoGas + manutGas;
+  const totalEle  = gastoEle + manutEle;
+  const ecoMes    = totalGas - totalEle;
+  const difValor  = valorEletrico - valorAtual;
+  const payback   = difValor > 0 && ecoMes > 0 ? difValor / (ecoMes * 12) : (ecoMes <= 0 ? 999 : 0);
 
-  document.getElementById('r-gas').textContent='R$ '+Math.round(totalGas).toLocaleString('pt-BR');
-  document.getElementById('r-ele').textContent='R$ '+Math.round(totalEle).toLocaleString('pt-BR');
-  document.getElementById('r-eco').textContent=ecoMes>0?'R$ '+Math.round(ecoMes).toLocaleString('pt-BR'):'R$ 0';
-  document.getElementById('r-pay').textContent=difValor<=0?'Já vale!':payback>0?payback.toFixed(1)+' anos':'-';
+  document.getElementById('r-gas').textContent = 'R$ ' + Math.round(totalGas).toLocaleString('pt-BR');
+  document.getElementById('r-ele').textContent = 'R$ ' + Math.round(totalEle).toLocaleString('pt-BR');
+  document.getElementById('r-eco').textContent = ecoMes > 0 ? 'R$ ' + Math.round(ecoMes).toLocaleString('pt-BR') : 'R$ 0';
+  document.getElementById('r-pay').textContent =
+    difValor <= 0    ? 'Já vale!' :
+    ecoMes <= 0      ? '—' :
+    payback > 0      ? payback.toFixed(1) + ' anos' : '—';
 
-  const max=Math.max(totalGas,totalEle);
-  document.getElementById('bar-gas').style.width=Math.round((totalGas/max)*100)+'%';
-  document.getElementById('bar-ele').style.width=Math.round((totalEle/max)*100)+'%';
-  document.getElementById('bar-gas-val').textContent='R$ '+Math.round(totalGas).toLocaleString('pt-BR')+'/mês';
-  document.getElementById('bar-ele-val').textContent='R$ '+Math.round(totalEle).toLocaleString('pt-BR')+'/mês';
+  const max = Math.max(totalGas, totalEle);
+  document.getElementById('bar-gas').style.width = Math.round((totalGas / max) * 100) + '%';
+  document.getElementById('bar-ele').style.width = Math.round((totalEle / max) * 100) + '%';
+  document.getElementById('bar-gas-val').textContent = 'R$ ' + Math.round(totalGas).toLocaleString('pt-BR') + '/mês';
+  document.getElementById('bar-ele-val').textContent = 'R$ ' + Math.round(totalEle).toLocaleString('pt-BR') + '/mês';
 
-  const idx=document.getElementById('select-modelo').value;
-  const nomeModelo=idx!==''?eletricos[parseInt(idx)].nome:'o elétrico';
-  const vBox=document.getElementById('verdict-box');
-  const vTitle=document.getElementById('verdict-title');
-  const vText=document.getElementById('verdict-text');
-  vBox.className='verdict';
-  if (ecoMes<=0) {
+  const idx       = document.getElementById('select-modelo').value;
+  const nomeModelo= idx !== '' ? eletricos[parseInt(idx)].nome : 'o elétrico';
+  const vBox      = document.getElementById('verdict-box');
+  const vPill     = document.getElementById('verdict-pill');
+  const vTitle    = document.getElementById('verdict-title');
+  const vText     = document.getElementById('verdict-text');
+
+  // Limpa classes anteriores
+  vBox.className = 'verdict';
+
+  if (ecoMes <= 0) {
+    // Nível 5 — Não compensa
     vBox.classList.add('danger');
-    vTitle.textContent=nomeModelo+' não compensa agora';
-    vText.textContent='Com seu perfil de uso, esse elétrico custaria mais caro no dia a dia. Considere rodar mais km ou buscar um modelo mais acessível.';
-  } else if (payback>10) {
-    vBox.classList.add('warning');
-    vTitle.textContent='Vale, mas o retorno é longo';
-    vText.textContent='Você economizaria R$ '+Math.round(ecoMes).toLocaleString('pt-BR')+'/mês com o '+nomeModelo+', mas levaria '+payback.toFixed(1)+' anos para recuperar o investimento.';
+    vPill.textContent  = '⚠ Não compensa agora';
+    vTitle.textContent = nomeModelo + ' não compensa agora';
+    vText.textContent  = 'Com seu perfil de uso, esse elétrico custaria mais caro no dia a dia. Considere rodar mais km por mês ou buscar um modelo mais acessível.';
+
+  } else if (difValor <= 0) {
+    // Nível 1 — Elétrico já é mais barato até na compra
+    vBox.classList.add('now');
+    vPill.textContent  = '⚡ Já vale agora';
+    vTitle.textContent = nomeModelo + ' já é mais barato!';
+    vText.textContent  = 'O elétrico custa menos que seu carro atual e ainda economiza R$ ' + Math.round(ecoMes).toLocaleString('pt-BR') + '/mês no dia a dia. Trocar agora faz sentido financeiro imediato.';
+
+  } else if (difValor <= 30000) {
+    // Nível 1 — Diferença pequena de valor + economia mensal
+    vBox.classList.add('now');
+    vPill.textContent  = '⚡ Já vale agora';
+    vTitle.textContent = nomeModelo + ' já vale a pena!';
+    vText.textContent  = 'A diferença de preço é de apenas R$ ' + Math.round(difValor).toLocaleString('pt-BR') + ' e você economiza R$ ' + Math.round(ecoMes).toLocaleString('pt-BR') + '/mês. O retorno vem em ' + payback.toFixed(1) + ' anos — uma troca que se paga rápido.';
+
+  } else if (payback <= 3) {
+    // Nível 2 — Retorno rápido
+    vBox.classList.add('fast');
+    vPill.textContent  = '✓ Retorno rápido';
+    vTitle.textContent = nomeModelo + ' vale a pena!';
+    vText.textContent  = 'Você economizaria R$ ' + Math.round(ecoMes).toLocaleString('pt-BR') + '/mês e recuperaria o investimento em apenas ' + payback.toFixed(1) + ' anos. Um retorno excelente.';
+
+  } else if (payback <= 7) {
+    // Nível 3 — Vale a médio prazo
+    vBox.classList.add('medium');
+    vPill.textContent  = '~ Vale a médio prazo';
+    vTitle.textContent = 'Vale, com planejamento';
+    vText.textContent  = 'Você economizaria R$ ' + Math.round(ecoMes).toLocaleString('pt-BR') + '/mês com o ' + nomeModelo + ', recuperando o investimento em ' + payback.toFixed(1) + ' anos. Faz sentido se você planeja ficar com o carro por bastante tempo.';
+
   } else {
-    vBox.classList.add('success');
-    vTitle.textContent=nomeModelo+' vale a pena!';
-    vText.textContent='Você economizaria R$ '+Math.round(ecoMes).toLocaleString('pt-BR')+'/mês e recuperaria o investimento em '+payback.toFixed(1)+' anos.';
+    // Nível 4 — Retorno longo
+    vBox.classList.add('warning');
+    vPill.textContent  = '⏳ Retorno longo';
+    vTitle.textContent = 'Vale, mas o retorno é demorado';
+    vText.textContent  = 'Você economizaria R$ ' + Math.round(ecoMes).toLocaleString('pt-BR') + '/mês, mas levaria ' + payback.toFixed(1) + ' anos para recuperar o investimento no ' + nomeModelo + '. Considere um modelo mais acessível para um retorno mais rápido.';
   }
-  document.getElementById('resultados').style.display='block';
+
+  document.getElementById('resultados').style.display = 'block';
 }
 
 function renderModelos() {
