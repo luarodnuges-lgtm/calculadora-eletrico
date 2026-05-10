@@ -501,7 +501,7 @@ function openUpgrade() {
   setTimeout(() => {
     if (!cardElement) {
       const elements = stripe.elements();
-      cardElement = elements.create('card', { style: { base: { fontSize:'16px', color:'#1a1a1a', fontFamily:'Inter, sans-serif' } } });
+      cardElement = elements.create('card', { hidePostalCode: true, style: { base: { fontSize:'16px', color:'#1a1a1a', fontFamily:'Inter, sans-serif' } } });
       cardElement.mount('#card-element');
     }
   }, 100);
