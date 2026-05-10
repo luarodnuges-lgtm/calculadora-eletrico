@@ -224,8 +224,8 @@
 
   <div class="tab-row">
     <button class="tab active" onclick="showTab('calc')" id="tab-calc">Calculadora</button>
-    <button class="tab" onclick="showTab('financiamento')" id="tab-financiamento">Financiamento 🔒</button>
     <button class="tab" onclick="showTab('modelos')" id="tab-modelos">Modelos do mercado</button>
+    <button class="tab" onclick="showTab('financiamento')" id="tab-financiamento">Financiamento 🔒</button>
     <button class="tab" onclick="showTab('abast')" id="tab-abast">Abastecimentos 🔒</button>
     <button class="tab" onclick="showTab('projecao')" id="tab-projecao">Projeção anual 🔒</button>
   </div>
@@ -514,19 +514,47 @@ async function handlePayment() {
   errors.textContent = '';
   msg.innerHTML = '<p style="font-size:13px;color:#888;">Processando pagamento...</p>';
 
-  const { paymentMethod, error } = await stripe.createPaymentMethod({ type:'card', card:cardElement });
-  if (error) { errors.textContent = error.message; msg.innerHTML=''; return; }
+  // Passo 1: cria o PaymentMethod com os dados do cartão
+  const { paymentMethod, error: pmError } = await stripe.createPaymentMethod({ type:'card', card:cardElement });
+  if (pmError) { errors.textContent = pmError.message; msg.innerHTML=''; return; }
 
-  // Calcula premium_until = hoje + 1 ano
-  const premiumUntil = new Date();
-  premiumUntil.setFullYear(premiumUntil.getFullYear() + 1);
-
-  await sb.from('profiles').upsert({
-    id: currentUser.id,
-    is_premium: true,
-    premium_until: premiumUntil.toISOString()
+  // Passo 2: chama a Edge Function do Supabase para criar o PaymentIntent com user_id no metadata
+  const { data: { session } } = await sb.auth.getSession();
+  const res = await fetch('https://bspecfiuptgeuynqkjzk.supabase.co/functions/v1/criar-payment-intent', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}`
+    },
+    body: JSON.stringify({
+      payment_method_id: paymentMethod.id,
+      user_id: currentUser.id
+    })
   });
 
+  const result = await res.json();
+
+  if (result.error) {
+    errors.textContent = result.error;
+    msg.innerHTML = '';
+    return;
+  }
+
+  // Passo 3: confirma o pagamento no frontend se necessitar de autenticação (3D Secure)
+  if (result.requires_action) {
+    const { error: confirmError } = await stripe.confirmCardPayment(result.client_secret);
+    if (confirmError) {
+      errors.textContent = confirmError.message;
+      msg.innerHTML = '';
+      return;
+    }
+  }
+
+  // Passo 4: pagamento confirmado — aguarda webhook ativar o premium
+  // Enquanto isso, otimisticamente já atualiza a UI
+  msg.innerHTML = '<p style="font-size:13px;color:#15803d;">✓ Pagamento confirmado! Ativando acesso...</p>';
+  await new Promise(r => setTimeout(r, 2000));
+  await checkPremium();
   isPremium = true;
   closeUpgrade();
   updateHeader();
