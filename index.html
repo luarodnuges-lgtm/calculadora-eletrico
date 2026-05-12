@@ -431,17 +431,6 @@ function checkPremiumValidity(profile) {
   return new Date(profile.premium_until) > new Date();
 }
 
-// Restaura sessão do localStorage se existir
-(async () => {
-  const saved = localStorage.getItem('sb-session');
-  if (saved) {
-    try {
-      const session = JSON.parse(saved);
-      await sb.auth.setSession({ access_token: session.access_token, refresh_token: session.refresh_token });
-    } catch(e) { localStorage.removeItem('sb-session'); }
-  }
-})();
-
 sb.auth.onAuthStateChange(async (event, session) => {
   currentUser = session?.user || null;
   if (currentUser) { await checkPremium(); } else { isPremium = false; }
@@ -1111,6 +1100,29 @@ function renderModelos() {
   });
   document.getElementById('modelos-lista').innerHTML=html;
 }
+
+// Restaura sessão do localStorage se existir
+(async () => {
+  const saved = localStorage.getItem('sb-session');
+  if (saved) {
+    try {
+      const session = JSON.parse(saved);
+      const { data, error } = await sb.auth.setSession({ 
+        access_token: session.access_token, 
+        refresh_token: session.refresh_token 
+      });
+      if (error) {
+        localStorage.removeItem('sb-session');
+      } else if (data?.user) {
+        currentUser = data.user;
+        await checkPremium();
+        updateHeader();
+      }
+    } catch(e) { 
+      localStorage.removeItem('sb-session'); 
+    }
+  }
+})();
 
 renderModelos();
 updateHeader();
