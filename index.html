@@ -489,7 +489,10 @@ async function handleAuth() {
     currentUser = data.user;
     await checkPremium();
     updateHeader();
-    closeModal();
+    document.getElementById('modal').style.display='none';
+    document.getElementById('auth-msg').innerHTML='';
+    // Força reload para garantir estado atualizado
+    setTimeout(() => { window.location.reload(); }, 300);
   } else {
     const { error } = await sb.auth.signUp({ email, password });
     if (error) { msg.innerHTML=`<p class="msg-error">${error.message}</p>`; return; }
