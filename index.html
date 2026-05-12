@@ -488,7 +488,8 @@ async function handleAuth() {
     const { data, error } = await sb.auth.signInWithPassword({ email, password });
     if (error) { msg.innerHTML='<p class="msg-error">E-mail ou senha incorretos.</p>'; return; }
     currentUser = data.user;
-    await checkPremium();
+    isPremium = false;
+    try { await checkPremium(); } catch(e) { isPremium = false; }
     updateHeader();
     document.getElementById('modal').style.display='none';
     document.getElementById('auth-msg').innerHTML='';
