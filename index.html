@@ -526,6 +526,7 @@ async function handlePayment() {
 
   // Passo 2: chama a Edge Function do Supabase para criar o PaymentIntent com user_id no metadata
   const { data: { session } } = await sb.auth.getSession();
+  if (!session) { errors.textContent = 'Sessão expirada. Faça login novamente.'; msg.innerHTML=''; return; }
   const res = await fetch('https://bspecfiuptgeuynqkjzk.supabase.co/functions/v1/criar-payment-intent', {
     method: 'POST',
     headers: {
