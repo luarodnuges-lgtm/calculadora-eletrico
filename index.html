@@ -485,23 +485,13 @@ async function handleAuth() {
   if (!email||!password) { msg.innerHTML='<p class="msg-error">Preencha e-mail e senha.</p>'; return; }
   if (modalMode==='login') {
     msg.innerHTML='<p style="font-size:13px;color:#888;">Entrando...</p>';
-    try {
-      const resp = await fetch('https://bspecfiuptgeuynqkjzk.supabase.co/auth/v1/token?grant_type=password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
-        body: JSON.stringify({ email, password })
-      });
-      const data = await resp.json();
-      if (data.error || !data.access_token) {
-        msg.innerHTML='<p class="msg-error">E-mail ou senha incorretos.</p>';
-        return;
-      }
-      // Salva sessão manualmente
-      localStorage.setItem('sb-session', JSON.stringify(data));
-      window.location.reload();
-    } catch(e) {
-      msg.innerHTML='<p class="msg-error">Erro ao conectar. Tente novamente.</p>';
-    }
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) { msg.innerHTML='<p class="msg-error">E-mail ou senha incorretos.</p>'; return; }
+    currentUser = data.user;
+    await checkPremium();
+    updateHeader();
+    document.getElementById('modal').style.display='none';
+    document.getElementById('auth-msg').innerHTML='';
   } else {
     const { error } = await sb.auth.signUp({ email, password });
     if (error) { msg.innerHTML=`<p class="msg-error">${error.message}</p>`; return; }
@@ -1100,29 +1090,6 @@ function renderModelos() {
   });
   document.getElementById('modelos-lista').innerHTML=html;
 }
-
-// Restaura sessão do localStorage se existir
-(async () => {
-  const saved = localStorage.getItem('sb-session');
-  if (saved) {
-    try {
-      const session = JSON.parse(saved);
-      const { data, error } = await sb.auth.setSession({ 
-        access_token: session.access_token, 
-        refresh_token: session.refresh_token 
-      });
-      if (error) {
-        localStorage.removeItem('sb-session');
-      } else if (data?.user) {
-        currentUser = data.user;
-        await checkPremium();
-        updateHeader();
-      }
-    } catch(e) { 
-      localStorage.removeItem('sb-session'); 
-    }
-  }
-})();
 
 renderModelos();
 updateHeader();
