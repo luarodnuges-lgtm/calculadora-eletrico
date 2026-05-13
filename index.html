@@ -379,7 +379,14 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const STRIPE_KEY   = 'pk_test_51TVOfmRo9mDmHaPCB3ASQtwh9FyQqRpyugXgajzb3oOvoN9OxUuBhlgYkpRv36YWcLEpF0PnZqGat2Xkyr68dlM700sgA3nFti';
 const PRICE_ID     = 'price_1TVcgdRo9mDmHaPC5NTn9hQ3'; // pagamento único 1 ano
 
-const sb     = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let _sb = null;
+function getSb() {
+  if (!_sb) _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  return _sb;
+}
+const sb = new Proxy({}, {
+  get: (_, prop) => getSb()[prop]
+});
 const stripe = Stripe(STRIPE_KEY);
 let cardElement = null;
 
