@@ -379,14 +379,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const STRIPE_KEY   = 'pk_test_51TVOfmRo9mDmHaPCB3ASQtwh9FyQqRpyugXgajzb3oOvoN9OxUuBhlgYkpRv36YWcLEpF0PnZqGat2Xkyr68dlM700sgA3nFti';
 const PRICE_ID     = 'price_1TVcgdRo9mDmHaPC5NTn9hQ3'; // pagamento único 1 ano
 
-let _sb = null;
-function getSb() {
-  if (!_sb) _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-  return _sb;
-}
-const sb = new Proxy({}, {
-  get: (_, prop) => getSb()[prop]
-});
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const stripe = Stripe(STRIPE_KEY);
 let cardElement = null;
 
@@ -438,19 +431,17 @@ function checkPremiumValidity(profile) {
   return new Date(profile.premium_until) > new Date();
 }
 
-sb.auth.onAuthStateChange(async (event, session) => {
-  currentUser = session?.user || null;
-  if (currentUser) { await checkPremium(); } else { isPremium = false; }
-  updateHeader();
-  if (currentActiveTab === 'abast') renderAbastView();
-  if (currentActiveTab === 'projecao') renderProjecaoView();
-  if (currentActiveTab === 'financiamento') renderFinanciamentoView();
-});
+// auth gerenciado manualmente via fetch
 
 async function checkPremium() {
   if (!currentUser) return;
-  const { data } = await sb.from('profiles').select('is_premium, premium_until').eq('id', currentUser.id).single();
-  isPremium = checkPremiumValidity(data);
+  try {
+    const resp = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${currentUser.id}&select=is_premium,premium_until`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${currentUser.access_token || SUPABASE_KEY}` }
+    });
+    const data = await resp.json();
+    isPremium = checkPremiumValidity(data?.[0]);
+  } catch(e) { isPremium = false; }
 }
 
 function premiumExpiryText() {
@@ -474,7 +465,9 @@ function updateHeader() {
   }
 }
 
-async function logout() { await sb.auth.signOut(); }
+async function logout() { 
+  currentUser = null; isPremium = false; updateHeader(); 
+}
 function openModal(mode) { document.getElementById('modal').style.display='flex'; switchModal(mode); }
 function closeModal() { document.getElementById('modal').style.display='none'; document.getElementById('auth-msg').innerHTML=''; }
 function switchModal(mode) {
@@ -492,14 +485,28 @@ async function handleAuth() {
   if (!email||!password) { msg.innerHTML='<p class="msg-error">Preencha e-mail e senha.</p>'; return; }
   if (modalMode==='login') {
     msg.innerHTML='<p style="font-size:13px;color:#888;">Entrando...</p>';
-    const { data, error } = await sb.auth.signInWithPassword({ email, password });
-    if (error) { msg.innerHTML='<p class="msg-error">E-mail ou senha incorretos.</p>'; return; }
-    currentUser = data.user;
-    isPremium = false;
-    try { await checkPremium(); } catch(e) { isPremium = false; }
-    updateHeader();
-    document.getElementById('modal').style.display='none';
-    document.getElementById('auth-msg').innerHTML='';
+    try {
+      const resp = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await resp.json();
+      if (!data.access_token) {
+        msg.innerHTML='<p class="msg-error">E-mail ou senha incorretos.</p>';
+        return;
+      }
+      // Seta sessão no cliente Supabase para usar em outras chamadas
+      await sb.auth.setSession({ access_token: data.access_token, refresh_token: data.refresh_token });
+      currentUser = data.user;
+      isPremium = false;
+      try { await checkPremium(); } catch(e) { isPremium = false; }
+      updateHeader();
+      document.getElementById('modal').style.display='none';
+      document.getElementById('auth-msg').innerHTML='';
+    } catch(e) {
+      msg.innerHTML='<p class="msg-error">Erro ao conectar. Tente novamente.</p>';
+    }
   } else {
     const { error } = await sb.auth.signUp({ email, password });
     if (error) { msg.innerHTML=`<p class="msg-error">${error.message}</p>`; return; }
